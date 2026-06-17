@@ -30,7 +30,7 @@ export default function RegisterPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
-    console.log("Iniciando Google Login nativo...");
+    console.log("Iniciando registro con Google...");
     try {
       const result = await GoogleSignIn.signIn({
         clientId: '285411670721-hjuem1ghq6i4ppbl07ikbvi81iri3kba.apps.googleusercontent.com',
@@ -41,6 +41,7 @@ export default function RegisterPage() {
       if (result.authentication && result.authentication.idToken) {
         const googleName = (result.givenName || "") + " " + (result.familyName || "");
         const googleEmail = result.email;
+        // Registro automático: Si es con Google, creamos la cuenta de inmediato
         await api.login(googleName || "Usuario Google", googleEmail);
         navigate('/onboarding');
       } else {
@@ -48,10 +49,9 @@ export default function RegisterPage() {
       }
     } catch (err: any) {
       console.error("Error en Google Login:", err);
-      // El error 10 suele ser por SHA-1 no registrado o Client ID incorrecto
       const errorMsg = err.code === "10"
-        ? "Error 10: Verifica que tu SHA-1 esté en Google Cloud y el Client ID sea correcto."
-        : (err.message || 'Error al iniciar sesión con Google');
+        ? "Error de conexión con Google. Verifica tu SHA-1 en la consola."
+        : (err.message || 'Error al registrarse con Google');
       setError(errorMsg);
     } finally {
       setLoading(false);
