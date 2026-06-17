@@ -1,0 +1,47 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
+
+  --color-rose-powder: #E9C4C4;
+  --color-sage-green: #8C9B73;
+}
+
+/* Base Fade-in utilities */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out forwards;
+}
+
+.gradient-hero {
+  background: radial-gradient(circle at top right, rgba(233, 196, 196, 0.15), transparent 40%),
+              radial-gradient(circle at bottom left, rgba(140, 155, 115, 0.1), transparent 40%);
+}
+
+.gradient-warm {
+  background: linear-gradient(to bottom, transparent, rgba(233, 196, 196, 0.05));
+}
+
+.shadow-warm {
+  box-shadow: 0 10px 30px -10px rgba(140, 155, 115, 0.2);
+}
+
+.shadow-card-hover {
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.05);
+}

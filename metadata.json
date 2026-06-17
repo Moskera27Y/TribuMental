@@ -1,0 +1,6 @@
+{
+  "name": "TribuMental",
+  "description": "Plataforma de acompañamiento emocional y organización médica para madres embarazadas y en posparto, con check-ins diarios, calendario integrado, escáner de documentos OCR y seguimiento vía WhatsApp.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">TribuMental</string>
+    <string name="title_activity_main">TribuMental</string>
+    <string name="package_name">com.tribumental.app</string>
+    <string name="custom_url_scheme">com.tribumental.app</string>
+</resources>
