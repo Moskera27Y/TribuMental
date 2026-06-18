@@ -519,7 +519,7 @@ app.post("/api/checkin", async (req, res) => {
         - Sé sumamente cariñoso, respetuoso y clínico pero con calidez humana.`;
 
         const response = await gemini.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-1.5-flash",
           contents: prompt,
           config: {
             responseMimeType: "application/json",
@@ -567,7 +567,7 @@ app.post("/api/checkin", async (req, res) => {
         - ADVERTENCIA: NO ofrezcas consejos médicos ni diagnósticos; mantente rigurosamente en el acompañamiento emocional.`;
 
         const chatResponse = await gemini.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-1.5-flash",
           contents: chatPrompt
         });
 
@@ -658,7 +658,7 @@ app.post("/api/checkin/:id/conversation", async (req, res) => {
         }));
 
         const chatResponse = await gemini.models.generateContent({
-          model: "gemini-3.5-flash",
+          model: "gemini-1.5-flash",
           contents: geminiHistory.map(h => ({
             role: h.role,
             parts: h.parts
@@ -934,7 +934,7 @@ app.post("/api/documents/analyze", async (req, res) => {
       };
 
       const response = await gemini.models.generateContent({
-        model: "gemini-3.5-flash",
+        model: "gemini-1.5-flash",
         contents: { parts: [imagePart, textPart] },
         config: {
           responseMimeType: "application/json",
