@@ -45,6 +45,10 @@ export interface Profile {
   userId: string;
   status: PregnancyStatus;
   weeksOrMonths: number; // semanas si es pregnant, meses si es postpartum
+  expectedDueDate?: string; // YYYY-MM-DD
+  babyBirthDate?: string; // YYYY-MM-DD
+  partnerName?: string;
+  city?: string;
   mainWorry: string;
   whatsappEnabled: boolean;
   whatsappNumber: string;

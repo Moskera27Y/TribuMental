@@ -375,29 +375,126 @@ export default function App() {
                   {activeNav === "companion" && <CompanionModule subscription={api.subscription} sentInvitations={api.sentInvitations} receivedInvitations={api.receivedInvitations} companionRelations={api.companionRelations} sendCompanionInvitation={api.sendCompanionInvitation} respondToInvitation={api.respondToInvitation} updateCompanionPermissions={api.updateCompanionPermissions} revokeCompanionRelation={api.revokeCompanionRelation} handleCheckout={handleBeginCheckout} />}
                   {activeNav === "whatsapp" && <WhatsAppMonitor logs={api.whatsappLogs} profile={api.profile} subscription={api.subscription} onUpdateProfile={api.updateProfile} onSendMessage={api.sendWhatsAppMessage} onAddAppointment={api.addAppointment} onGoToCalendar={() => setActiveNav("calendar")} />}
                   {activeNav === "pricing" && <PricingCentre subscription={api.subscription} onUpgrade={handleBeginCheckout} onCancelRenew={() => handleBeginCheckout("FREE")} />}
-                  {activeNav === "profile" && (
-                    <div className="space-y-6 max-w-xl mx-auto animate-fadeIn text-xs text-[#7A7875]">
-                      <div className="bg-white rounded-[40px] border border-[#ECE8E0] p-6 shadow-sm space-y-6">
-                        <h4 className="text-md font-serif font-semibold text-[#2F3E46] flex items-center gap-2">
-                          <User className="w-5 h-5 text-[#8C9B73]" />
-                          Perfil Materno
-                        </h4>
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {activeNav === "profile" && api.profile && (
+                    <div className="space-y-6 max-w-2xl mx-auto animate-fadeIn text-xs text-[#7A7875] pb-20">
+                      {/* Información de Cuenta */}
+                      <div className="bg-white rounded-[40px] border border-[#ECE8E0] p-6 md:p-8 shadow-sm space-y-6">
+                        <div className="flex items-center justify-between border-b border-[#ECE8E0] pb-4">
+                          <h4 className="text-lg font-serif font-semibold text-[#2F3E46] flex items-center gap-2">
+                            <User className="w-5 h-5 text-[#8C9B73]" />
+                            Perfil Materno
+                          </h4>
+                          <span className="px-3 py-1 rounded-full bg-[#8C9B73]/10 text-[#5A634D] font-bold text-[10px] uppercase tracking-wider">
+                            Plan {api.subscription?.plan || 'Gratis'}
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Datos Básicos */}
+                          <div className="space-y-4">
+                            <p className="text-[10px] font-bold text-[#A3A19E] uppercase tracking-widest">Datos Personales</p>
                             <div>
-                              <label className="block text-xs font-semibold text-gray-500 mb-1">Nombre</label>
-                              <input type="text" value={api.user.name} onChange={(e) => api.login(e.target.value, api.user.email)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:outline-none" />
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Nombre Completo</label>
+                              <input
+                                type="text"
+                                value={api.user?.name}
+                                onChange={(e) => api.login(e.target.value, api.user?.email || '')}
+                                className="w-full px-4 py-3 rounded-2xl border border-[#ECE8E0] focus:outline-none focus:ring-2 focus:ring-[#8C9B73]/20 transition-all bg-[#FBF9F4]"
+                              />
                             </div>
                             <div>
-                              <label className="block text-xs font-semibold text-gray-500 mb-1">Recordatorios</label>
-                              <select value={api.profile.reminderFrequency} onChange={e => api.updateProfile({ reminderFrequency: e.target.value as any })} className="w-full px-3 py-2.5 rounded-xl border border-gray-200 cursor-pointer">
-                                <option value="daily">Diarios</option>
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Ciudad / Ubicación</label>
+                              <input
+                                type="text"
+                                value={api.profile.city || ''}
+                                onChange={(e) => api.updateProfile({ city: e.target.value })}
+                                placeholder="Ej: Madrid, España"
+                                className="w-full px-4 py-3 rounded-2xl border border-[#ECE8E0] focus:outline-none focus:ring-2 focus:ring-[#8C9B73]/20 transition-all bg-[#FBF9F4]"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Nombre de Pareja / Acompañante</label>
+                              <input
+                                type="text"
+                                value={api.profile.partnerName || ''}
+                                onChange={(e) => api.updateProfile({ partnerName: e.target.value })}
+                                placeholder="Nombre de tu apoyo"
+                                className="w-full px-4 py-3 rounded-2xl border border-[#ECE8E0] focus:outline-none focus:ring-2 focus:ring-[#8C9B73]/20 transition-all bg-[#FBF9F4]"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Estado de Maternidad */}
+                          <div className="space-y-4">
+                            <p className="text-[10px] font-bold text-[#A3A19E] uppercase tracking-widest">Etapa Actual</p>
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Estado</label>
+                              <select
+                                value={api.profile.status}
+                                onChange={e => api.updateProfile({ status: e.target.value as any })}
+                                className="w-full px-4 py-3 rounded-2xl border border-[#ECE8E0] focus:outline-none bg-[#FBF9F4] font-medium"
+                              >
+                                <option value={PregnancyStatus.PREGNANT}>Embarazada 🤰</option>
+                                <option value={PregnancyStatus.POSTPARTUM}>Posparto / Mamá Reciente 👶</option>
+                              </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                                  {api.profile.status === PregnancyStatus.PREGNANT ? 'Semanas' : 'Meses'}
+                                </label>
+                                <input
+                                  type="number"
+                                  value={api.profile.weeksOrMonths}
+                                  onChange={e => api.updateProfile({ weeksOrMonths: parseInt(e.target.value) || 0 })}
+                                  className="w-full px-4 py-3 rounded-2xl border border-[#ECE8E0] focus:outline-none bg-[#FBF9F4]"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs font-semibold text-gray-500 mb-1.5">
+                                  {api.profile.status === PregnancyStatus.PREGNANT ? 'Fecha Parto' : 'Nacimiento'}
+                                </label>
+                                <input
+                                  type="date"
+                                  value={api.profile.status === PregnancyStatus.PREGNANT ? api.profile.expectedDueDate : api.profile.babyBirthDate}
+                                  onChange={e => api.updateProfile(api.profile?.status === PregnancyStatus.PREGNANT ? { expectedDueDate: e.target.value } : { babyBirthDate: e.target.value })}
+                                  className="w-full px-4 py-3 rounded-2xl border border-[#ECE8E0] focus:outline-none bg-[#FBF9F4] text-[10px]"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Frecuencia Recordatorios</label>
+                              <select
+                                value={api.profile.reminderFrequency}
+                                onChange={e => api.updateProfile({ reminderFrequency: e.target.value as any })}
+                                className="w-full px-4 py-3 rounded-2xl border border-[#ECE8E0] focus:outline-none bg-[#FBF9F4]"
+                              >
+                                <option value="daily">Diarios (Recomendado)</option>
                                 <option value="weekly">Semanales</option>
                                 <option value="none">Ninguno</option>
                               </select>
                             </div>
                           </div>
                         </div>
+
+                        {/* Botón Cerrar Sesión */}
+                        <div className="pt-6 border-t border-[#ECE8E0] flex justify-end">
+                          <button
+                            onClick={handleLogout}
+                            className="px-6 py-3 rounded-2xl border border-rose-100 text-rose-500 font-bold hover:bg-rose-50 transition-all flex items-center gap-2"
+                          >
+                            <Lock size={16} />
+                            Cerrar Sesión
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#FBF9F4] p-6 rounded-[32px] border border-dashed border-[#ECE8E0] text-center">
+                        <p className="text-[10px] text-[#A3A19E] leading-relaxed italic">
+                          "Tus datos nos ayudan a que Tribu AI entienda mejor tu etapa y te brinde recomendaciones de salud perinatal más precisas."
+                        </p>
                       </div>
                     </div>
                   )}

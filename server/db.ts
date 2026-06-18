@@ -94,6 +94,9 @@ const INITIAL_DATABASE: DatabaseSchema = {
       userId: "usr-default",
       status: PregnancyStatus.PREGNANT,
       weeksOrMonths: 24, // 24 semanas de embarazo
+      expectedDueDate: "2026-10-15",
+      partnerName: "Papá Tribu",
+      city: "Madrid, España",
       mainWorry: "Miedo al parto y organización del nido",
       whatsappEnabled: true,
       whatsappNumber: "+34612345678",
