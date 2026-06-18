@@ -17,7 +17,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError('');
     try {
-      await api.signin(name, email);
+      await api.login(name, email);
       navigate('/onboarding');
     } catch (err: any) {
       setError(err.message || 'Error al registrarse');

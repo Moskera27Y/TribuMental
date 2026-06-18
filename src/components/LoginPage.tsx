@@ -16,7 +16,7 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await api.login("Usuario", email);
+      await api.signin(email);
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Error al iniciar sesión');
