@@ -906,7 +906,7 @@ app.post("/api/documents/analyze", async (req, res) => {
   const gemini = getGeminiClient();
   if (gemini && base64Data) {
     try {
-      console.log(`Sending image document to Gemini 3.5-flash for real OCR extraction...`);
+      console.log(`Sending image document to Gemini 1.5-flash for real OCR extraction...`);
       const imagePart = {
         inlineData: {
           mimeType: mimeType,
