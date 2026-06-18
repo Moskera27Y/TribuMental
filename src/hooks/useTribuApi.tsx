@@ -90,7 +90,9 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setErrorString(null);
-      const res = await fetch("/api/auth/session");
+      // Usamos la URL absoluta si estamos en modo nativo (APK)
+      const baseUrl = window.location.origin.includes('localhost') ? '' : 'https://tribumental.onrender.com';
+      const res = await fetch(`${baseUrl}/api/auth/session`);
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
