@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Mail, Lock } from 'lucide-react';
-import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 import { useTribuApi } from '../hooks/useTribuApi';
 
 export default function LoginPage() {
@@ -29,28 +28,37 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
-    console.log("Iniciando Google Login nativo...");
+    console.log("Iniciando flujo de Google...");
     try {
-      const result = await GoogleSignIn.signIn({
-        clientId: '285411670721-hjuem1ghq6i4ppbl07ikbvi81iri3kba.apps.googleusercontent.com',
-      });
+      const data = await api.getGoogleAuthUrl();
+      const authUrl = data.url;
 
-      console.log("Resultado de Google Login:", result);
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
 
-      if (result.authentication && result.authentication.idToken) {
-        const googleEmail = result.email;
-        await api.login(result.givenName || "Usuario Google", googleEmail);
-        navigate('/dashboard');
-      } else {
-        throw new Error("No se obtuvo el token de autenticación");
-      }
+      const popup = window.open(authUrl, 'google-login', `width=${width},height=${height},left=${left},top=${top}`);
+
+      const messageListener = async (event: MessageEvent) => {
+        if (event.data.type === 'OAUTH_AUTH_SUCCESS') {
+          window.removeEventListener('message', messageListener);
+          await api.refreshSession();
+          navigate('/dashboard');
+        }
+      };
+
+      window.addEventListener('message', messageListener);
+
+      const checkPopup = setInterval(() => {
+        if (!popup || popup.closed) {
+          clearInterval(checkPopup);
+          setLoading(false);
+        }
+      }, 1000);
+
     } catch (err: any) {
-      console.error("Error en Google Login:", err);
-      const errorMsg = err.code === "10"
-        ? "Error 10: Verifica que tu SHA-1 esté en Google Cloud y el Client ID sea correcto."
-        : (err.message || 'Error al iniciar sesión con Google');
-      setError(errorMsg);
-    } finally {
+      setError(err.message || 'Error al iniciar sesión con Google');
       setLoading(false);
     }
   };

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Mail, Lock, User } from 'lucide-react';
-import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
 import { useTribuApi } from '../hooks/useTribuApi';
 
 export default function RegisterPage() {
@@ -30,30 +29,47 @@ export default function RegisterPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
-    console.log("Iniciando registro con Google...");
+    console.log("Iniciando flujo de Google...");
     try {
-      const result = await GoogleSignIn.signIn({
-        clientId: '285411670721-hjuem1ghq6i4ppbl07ikbvi81iri3kba.apps.googleusercontent.com',
-      });
+      // Obtenemos la URL de autenticación desde el backend (puede ser real o simulada)
+      const data = await api.getGoogleAuthUrl();
+      const authUrl = data.url;
 
-      console.log("Resultado de Google Login:", result);
+      // Abrimos una ventana emergente para el login
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
 
-      if (result.authentication && result.authentication.idToken) {
-        const googleName = (result.givenName || "") + " " + (result.familyName || "");
-        const googleEmail = result.email;
-        // Registro automático: Si es con Google, creamos la cuenta de inmediato
-        await api.login(googleName || "Usuario Google", googleEmail);
-        navigate('/onboarding');
-      } else {
-        throw new Error("No se obtuvo el token de autenticación");
-      }
+      const popup = window.open(
+        authUrl,
+        'google-login',
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      // Escuchamos el mensaje de éxito que envía el backend al terminar
+      const messageListener = async (event: MessageEvent) => {
+        if (event.data.type === 'OAUTH_AUTH_SUCCESS') {
+          window.removeEventListener('message', messageListener);
+          console.log("Login con Google exitoso, refrescando sesión...");
+          await api.refreshSession();
+          navigate('/onboarding');
+        }
+      };
+
+      window.addEventListener('message', messageListener);
+
+      // Verificamos periódicamente si la ventana se cerró sin éxito
+      const checkPopup = setInterval(() => {
+        if (!popup || popup.closed) {
+          clearInterval(checkPopup);
+          setLoading(false);
+        }
+      }, 1000);
+
     } catch (err: any) {
       console.error("Error en Google Login:", err);
-      const errorMsg = err.code === "10"
-        ? "Error de conexión con Google. Verifica tu SHA-1 en la consola."
-        : (err.message || 'Error al registrarse con Google');
-      setError(errorMsg);
-    } finally {
+      setError(err.message || 'Error al conectar con Google');
       setLoading(false);
     }
   };

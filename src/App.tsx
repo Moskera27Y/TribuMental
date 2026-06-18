@@ -48,20 +48,6 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    // Initialize Google Sign-In once at app startup
-    const initGoogle = async () => {
-      try {
-        await GoogleSignIn.initialize({
-          clientId: '285411670721-bfugrfemcsrt0udc1bkh2pkbh6ob1scg.apps.googleusercontent.com',
-        });
-        console.log("Google Sign-In initialized");
-      } catch (e) {
-        console.error("Initialization error", e);
-      }
-    };
-    initGoogle();
-  }, []);
   const [activeNav, setActiveNav] = useState("dashboard");
   const [showCrisisAlert, setShowCrisisAlert] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
