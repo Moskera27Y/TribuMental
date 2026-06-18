@@ -347,7 +347,6 @@ export default function DocumentScanner({
               )}
             </div>
           )}
-          )}
 
           {/* OCR RESULTS WORKBENCH BLOCK */}
           {!viewOwnerId && scannedResult && (
