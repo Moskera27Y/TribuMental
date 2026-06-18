@@ -5,7 +5,8 @@
 
 import React, { useState } from "react";
 import { MedicalDocument, Appointment } from "../types";
-import { 
+import { Camera as CapacitorCamera, CameraResultType, CameraSource } from '@capacitor/camera';
+import {
   FileText, 
   Camera, 
   Sparkles, 
@@ -15,7 +16,9 @@ import {
   Eye,
   CheckCircle,
   FileSpreadsheet,
-  AlertCircle
+  AlertCircle,
+  X,
+  Type
 } from "lucide-react";
 
 interface DocumentScannerProps {
@@ -43,7 +46,9 @@ export default function DocumentScanner({
   const [scannedResult, setScannedResult] = useState<any | null>(null);
   
   // Custom interactive mock capture state
-  const [selectedPresetFile, setSelectedPresetFile] = useState<string | null>(null);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const [customFileName, setCustomFileName] = useState<string>("");
+  const [customFileType, setCustomFileType] = useState<string>("Laboratorio");
   const [selectedApptId, setSelectedApptId] = useState<string>("");
   
   // View file modal
@@ -74,31 +79,60 @@ export default function DocumentScanner({
     }
   ];
 
-  const handleSelectPreset = (presetId: string) => {
-    setSelectedPresetFile(presetId);
-    setScannedResult(null);
+  const takePhoto = async () => {
+    try {
+      const image = await CapacitorCamera.getPhoto({
+        quality: 90,
+        allowEditing: false,
+        resultType: CameraResultType.DataUrl,
+        source: CameraSource.Prompt, // Permite elegir entre Cámara o Galería
+        promptLabelHeader: "Escanear Documento",
+        promptLabelPhoto: "Elegir de Galería",
+        promptLabelPicture: "Tomar Foto"
+      });
+
+      if (image && image.dataUrl) {
+        setCapturedImage(image.dataUrl);
+        // Sugerir un nombre basado en la fecha si está vacío
+        if (!customFileName) {
+          const date = new Date().toLocaleDateString().replace(/\//g, '-');
+          setCustomFileName(`Documento_${date}`);
+        }
+      }
+    } catch (e) {
+      console.error("Camera error", e);
+    }
   };
 
   const handleScanAction = async () => {
-    if (!selectedPresetFile) return;
+    if (!capturedImage && !selectedPresetFile) return;
     
     setScanning(true);
     setScannedResult(null);
 
     try {
-      const preset = PRESET_FILES.find(p => p.id === selectedPresetFile)!;
-      // We send a tiny valid placeholder PNG base64 representation to prompt Gemini
-      const dummyPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-      const dataUrl = `data:image/png;base64,${dummyPngBase64}`;
+      let dataUrl = capturedImage;
+      let name = customFileName || "Documento_Escaneado";
+      let type = customFileType;
 
-      console.log(`Analyzing preset: ${preset.name} using full-stack OCR...`);
+      if (!capturedImage && selectedPresetFile) {
+        const preset = PRESET_FILES.find(p => p.id === selectedPresetFile)!;
+        name = preset.name;
+        type = preset.type;
+        // Placeholder para presets
+        const dummyPngBase64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+        dataUrl = `data:image/png;base64,${dummyPngBase64}`;
+      }
+
+      console.log(`Analyzing document: ${name} using full-stack OCR...`);
       // Contact our server-side Gemini OCR engine
-      const analyzed = await onAnalyzeDocument(preset.name, preset.type, dataUrl);
+      const analyzed = await onAnalyzeDocument(name, type, dataUrl!);
       setScannedResult({
-        name: preset.name,
-        type: preset.type,
+        name,
+        type,
         ocrText: analyzed.ocrText,
-        extractedMetadata: analyzed.extractedMetadata
+        extractedMetadata: analyzed.extractedMetadata,
+        dataUrl
       });
     } catch (err) {
       console.error(err);
@@ -107,6 +141,9 @@ export default function DocumentScanner({
     }
   };
 
+  // Keep compatibility with old presets for testing
+  const [selectedPresetFile, setSelectedPresetFile] = useState<string | null>(null);
+
   const handleSaveDocument = async () => {
     if (!scannedResult) return;
 
@@ -114,7 +151,7 @@ export default function DocumentScanner({
       await onAddDocument({
         name: scannedResult.name,
         type: scannedResult.type,
-        fileDataUrl: "/assets/sample_document.png", // simulated cloud storage URL
+        fileDataUrl: scannedResult.dataUrl || "/assets/sample_document.png",
         ocrText: scannedResult.ocrText,
         extractedMetadata: scannedResult.extractedMetadata,
         appointmentId: selectedApptId || undefined,
@@ -123,6 +160,8 @@ export default function DocumentScanner({
 
       // Clear scanning workbench
       setScannedResult(null);
+      setCapturedImage(null);
+      setCustomFileName("");
       setSelectedPresetFile(null);
       setSelectedApptId("");
     } catch (err) {
@@ -169,7 +208,7 @@ export default function DocumentScanner({
               </h4>
 
               {/* Custom Interactive Camera Box */}
-              <div className="relative aspect-video rounded-3xl bg-[#2F3E46] border-2 border-dashed border-[#8C9B73]/40 overflow-hidden flex flex-col items-center justify-center p-4">
+              <div className="relative aspect-video rounded-3xl bg-[#2F3E46] border-2 border-dashed border-[#8C9B73]/40 overflow-hidden flex flex-col items-center justify-center p-4 group">
                 {scanning ? (
                   <>
                     {/* Sweeping Laser Beam Animation */}
@@ -181,18 +220,41 @@ export default function DocumentScanner({
                       <p className="text-[10px] text-[#A3A19E]">Extrayendo diagnósticos, fechas y médicos...</p>
                     </div>
                   </>
+                ) : capturedImage ? (
+                  <div className="relative w-full h-full">
+                    <img src={capturedImage} className="w-full h-full object-cover rounded-2xl opacity-60" alt="Captured" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-4 space-y-2">
+                      <CheckCircle className="w-10 h-10 text-[#8C9B73]" />
+                      <p className="text-xs font-bold text-white">Imagen capturada</p>
+                      <button
+                        onClick={() => { setCapturedImage(null); setCustomFileName(""); }}
+                        className="text-[10px] bg-rose-500/20 text-rose-200 px-3 py-1 rounded-full border border-rose-500/30 hover:bg-rose-500/40 transition-all"
+                      >
+                        Cambiar foto
+                      </button>
+                    </div>
+                  </div>
                 ) : selectedPresetFile ? (
                   <div className="text-center text-white p-4 space-y-2 z-10">
                     <FileText className="w-12 h-12 text-[#8C9B73] mx-auto" />
                     <p className="text-xs font-bold font-serif text-[#F4F1ED]">{PRESET_FILES.find(p => p.id === selectedPresetFile)?.name}</p>
-                    <p className="text-[10px] text-[#A3A19E]">Listo para ser escasamente analizado por el motor AI.</p>
+                    <p className="text-[10px] text-[#A3A19E]">Documento de prueba listo.</p>
+                    <button
+                      onClick={() => setSelectedPresetFile(null)}
+                      className="text-[10px] text-[#8C9B73] underline"
+                    >
+                      Quitar
+                    </button>
                   </div>
                 ) : (
-                  <div className="text-center text-[#A3A19E] p-4 space-y-2">
-                    <Camera className="w-10 h-10 mx-auto text-[#8C9B73]" />
-                    <p className="text-xs font-semibold text-[#F4F1ED]">Cámara lista</p>
-                    <p className="text-[10px] text-[#A3A19E]">Selecciona un documento muestra abajo para simular captura de cámara móvil.</p>
-                  </div>
+                  <button
+                    onClick={takePhoto}
+                    className="w-full h-full flex flex-col items-center justify-center text-[#A3A19E] space-y-2 hover:bg-[#8C9B73]/5 transition-all cursor-pointer"
+                  >
+                    <Camera className="w-10 h-10 mx-auto text-[#8C9B73] group-hover:scale-110 transition-transform" />
+                    <p className="text-xs font-semibold text-[#F4F1ED]">Tocar para Escanear</p>
+                    <p className="text-[10px] text-[#A3A19E]">Usa tu cámara para capturar el documento físico</p>
+                  </button>
                 )}
 
                 {/* Laser css styles helper */}
@@ -208,40 +270,83 @@ export default function DocumentScanner({
                 `}</style>
               </div>
 
-              {/* Step 1: Select dummy prescription button triggers */}
-              <div className="mt-4 space-y-2.5">
-                <label className="block text-[10px] font-bold text-[#A3A19E] uppercase">1. Elige un documento de tu folder físico:</label>
-                <div className="space-y-2">
-                  {PRESET_FILES.map(p => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => handleSelectPreset(p.id)}
-                      className={`w-full p-3 rounded-2xl border text-left text-xs flex flex-col justify-between transition-all cursor-pointer ${
-                        selectedPresetFile === p.id 
-                          ? "border-[#8C9B73] bg-[#FBF9F4] shadow-sm ring-1 ring-[#8C9B73]/40" 
-                          : "border-[#ECE8E0] hover:bg-[#F4F1ED] bg-white text-[#2F3E46]"
-                      }`}
-                    >
-                      <span className="font-semibold text-[#2F3E46]">{p.label}</span>
-                      <span className="text-[10px] text-[#7A7875] mt-0.5">{p.desc}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Step 1: File Info (Only shown if photo taken or preset selected) */}
+              {(capturedImage || selectedPresetFile) && !scannedResult && (
+                <div className="mt-4 space-y-3 animate-fadeIn">
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-[#A3A19E] uppercase flex items-center gap-1">
+                      <Type size={12} /> Nombre del documento:
+                    </label>
+                    <input
+                      type="text"
+                      value={customFileName}
+                      onChange={(e) => setCustomFileName(e.target.value)}
+                      placeholder="Ej: Receta Pediatra Mateo"
+                      className="w-full px-4 py-2.5 rounded-xl border border-[#ECE8E0] text-xs focus:outline-none focus:ring-1 focus:ring-[#8C9B73] bg-[#FBF9F4]"
+                    />
+                  </div>
 
-              {/* Step 2: Trigger Scan */}
-              <button
-                onClick={handleScanAction}
-                disabled={!selectedPresetFile || scanning}
-                className={`w-full mt-4 py-3 bg-[#8C9B73] hover:bg-[#7d8c66] text-white text-xs font-bold rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                  !selectedPresetFile ? "opacity-50 pointer-events-none" : ""
-                }`}
-              >
-                <Sparkles className="w-4 h-4 animate-pulse" />
-                <span>{scanning ? "Sincronizando con Gemini..." : "Escanear Documento con IA"}</span>
-              </button>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-[#A3A19E] uppercase">Categoría:</label>
+                    <div className="flex gap-2">
+                      {["Laboratorio", "Ecografía", "Pediatría"].map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setCustomFileType(cat)}
+                          className={`flex-1 py-2 rounded-lg text-[10px] font-bold border transition-all ${
+                            customFileType === cat
+                              ? "bg-[#8C9B73] text-white border-[#8C9B73]"
+                              : "bg-white text-[#7A7875] border-[#ECE8E0] hover:bg-[#F4F1ED]"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Trigger Scan */}
+                  <button
+                    onClick={handleScanAction}
+                    disabled={scanning}
+                    className="w-full mt-2 py-3 bg-[#8C9B73] hover:bg-[#7d8c66] text-white text-xs font-bold rounded-xl shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Sparkles className="w-4 h-4 animate-pulse" />
+                    <span>{scanning ? "Sincronizando con Gemini..." : "Analizar con IA 🌸"}</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Alternative: Preset selection (Only if no image captured) */}
+              {!capturedImage && !scannedResult && !selectedPresetFile && (
+                <div className="mt-6 border-t border-[#ECE8E0] pt-4">
+                  <p className="text-[9px] font-bold text-[#A3A19E] uppercase mb-3">O usa un documento de prueba:</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {PRESET_FILES.map(p => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedPresetFile(p.id);
+                          setCustomFileName(p.name);
+                          setCustomFileType(p.type);
+                        }}
+                        className="w-full p-2.5 rounded-xl border border-[#ECE8E0] text-left hover:bg-[#F4F1ED] transition-all flex items-center gap-3 cursor-pointer group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-[#8C9B73]/10 flex items-center justify-center text-sm group-hover:bg-[#8C9B73]/20">
+                          {p.id.includes('analitica') ? '🧪' : p.id.includes('ecografia') ? '🤰' : '👶'}
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-bold text-[#2F3E46]">{p.label}</p>
+                          <p className="text-[9px] text-[#7A7875]">{p.desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
+          )}
           )}
 
           {/* OCR RESULTS WORKBENCH BLOCK */}
