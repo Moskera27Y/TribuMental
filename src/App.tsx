@@ -42,6 +42,7 @@ import {
 } from "lucide-react";
 
 import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
+import { Browser } from '@capacitor/browser';
 
 export default function App() {
   const api = useTribuApi();
@@ -96,7 +97,18 @@ export default function App() {
   const handleBeginCheckout = async (plan: string) => {
     try {
       const data = await api.handleCheckout(plan);
+
+      // Si estamos en un dispositivo móvil (APK), usamos el navegador del sistema para mayor seguridad
+      const isMobile = /Android|iPhone/i.test(navigator.userAgent);
+
       if (data.isRealWompi) {
+        if (isMobile) {
+          // Flujo profesional para APK: Abrir checkout en navegador externo
+          const checkoutUrl = `https://checkout.wompi.co/p/?public_key=${data.publicKey}&currency=${data.currency}&amount_in_cents=${data.amountInCents}&reference=${data.reference}&signature:integrity=${data.signature}&redirect_url=${encodeURIComponent(data.redirectUrl)}`;
+          await Browser.open({ url: checkoutUrl });
+          return;
+        }
+
         setWompiLoading(true);
         const loadScript = (url: string): Promise<boolean> => {
           return new Promise((resolve) => {
