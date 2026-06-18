@@ -192,13 +192,18 @@ function Step1({ data, onUpdate }: any) {
           className={cn(
             "flex flex-col items-center gap-2 p-6 rounded-2xl border-2 transition-all text-center cursor-pointer",
             data.status === opt.id
-              ? "border-foreground bg-foreground/5"
-              : "border-border hover:border-foreground/30 hover:bg-muted/30"
+              ? "border-sage-green bg-sage-green/10 shadow-md scale-[1.02]"
+              : "border-border hover:border-sage-green/30 hover:bg-muted/30"
           )}
         >
           <span className="text-4xl">{opt.emoji}</span>
           <p className="font-medium text-sm text-foreground">{opt.label}</p>
           <p className="text-xs text-muted-foreground">{opt.desc}</p>
+          {data.status === opt.id && (
+            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-sage-green flex items-center justify-center">
+              <Check size={12} className="text-white" />
+            </div>
+          )}
         </button>
       ))}
     </div>
@@ -242,16 +247,18 @@ function Step3({ data, onUpdate }: any) {
           key={concern.id}
           onClick={() => onUpdate({ mainWorry: concern.label })}
           className={cn(
-            "flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all text-sm cursor-pointer",
+            "flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all text-sm cursor-pointer relative",
             data.mainWorry === concern.label
-              ? "border-foreground bg-foreground/5"
-              : "border-border hover:border-foreground/30 hover:bg-muted/30"
+              ? "border-sage-green bg-sage-green/10 shadow-sm"
+              : "border-border hover:border-sage-green/30 hover:bg-muted/30"
           )}
         >
           <span className="text-lg">{concern.emoji}</span>
-          <span className="text-foreground">{concern.label}</span>
+          <span className="font-medium text-foreground">{concern.label}</span>
           {data.mainWorry === concern.label && (
-            <Check size={16} className="ml-auto text-foreground" />
+            <div className="ml-auto w-5 h-5 rounded-full bg-sage-green flex items-center justify-center">
+              <Check size={12} className="text-white" />
+            </div>
           )}
         </button>
       ))}
@@ -272,10 +279,10 @@ function Step4({ data, onUpdate }: any) {
             onClick={() => onUpdate({ whatsappEnabled: !data.whatsappEnabled })}
             className={cn(
               "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all cursor-pointer",
-              data.whatsappEnabled ? "border-foreground bg-foreground" : "border-muted-foreground"
+              data.whatsappEnabled ? "border-sage-green bg-sage-green" : "border-muted-foreground"
             )}
           >
-            {data.whatsappEnabled && <Check size={14} className="text-background" />}
+            {data.whatsappEnabled && <Check size={14} className="text-white" />}
           </button>
         </div>
         <div className="cursor-pointer" onClick={() => onUpdate({ whatsappEnabled: !data.whatsappEnabled })}>
@@ -313,15 +320,20 @@ function Step4({ data, onUpdate }: any) {
                   className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-xl border-2 text-left transition-all cursor-pointer",
                     data.reminderFrequency === freq.id
-                      ? "border-foreground bg-foreground/5"
-                      : "border-border hover:border-foreground/30"
+                      ? "border-sage-green bg-sage-green/10 shadow-sm"
+                      : "border-border hover:border-sage-green/30"
                   )}
                 >
                   <span className="text-lg">{freq.emoji}</span>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{freq.label}</p>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-foreground">{freq.label}</p>
                     <p className="text-xs text-muted-foreground">{freq.sublabel}</p>
                   </div>
+                  {data.reminderFrequency === freq.id && (
+                    <div className="w-5 h-5 rounded-full bg-sage-green flex items-center justify-center">
+                      <Check size={12} className="text-white" />
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -366,17 +378,17 @@ function Step5({ data, onUpdate }: any) {
           className={cn(
             "w-full flex items-start gap-4 p-4 rounded-2xl border-2 text-left transition-all cursor-pointer",
             data.plan === opt.id
-              ? "border-foreground bg-foreground/5"
-              : "border-border hover:border-foreground/30",
-            opt.highlight && data.plan !== opt.id ? "border-sage-green/40" : ""
+              ? "border-sage-green bg-sage-green/10 shadow-sm"
+              : "border-border hover:border-sage-green/30",
+            opt.highlight && data.plan !== opt.id ? "border-sage-green/40 shadow-sm" : ""
           )}
         >
           <span className="text-2xl mt-0.5">{opt.emoji}</span>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <p className="font-medium text-sm text-foreground">{opt.name}</p>
+              <p className={cn("text-sm font-bold", data.plan === opt.id ? "text-foreground" : "text-foreground")}>{opt.name}</p>
               {opt.highlight && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-sage-green/20 text-foreground">Recomendado</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-sage-green/20 text-foreground font-bold uppercase tracking-wider">Recomendado</span>
               )}
             </div>
             <p className="text-xs text-muted-foreground mb-2">{opt.desc}</p>
@@ -385,11 +397,11 @@ function Step5({ data, onUpdate }: any) {
                 <span key={i} className="text-xs text-muted-foreground">✓ {f}</span>
               ))}
             </div>
-            <p className="text-sm font-medium text-foreground mt-2">{opt.price}</p>
+            <p className="text-sm font-bold text-foreground mt-2">{opt.price}</p>
           </div>
           {data.plan === opt.id && (
-            <div className="w-5 h-5 rounded-full bg-foreground flex items-center justify-center flex-shrink-0 mt-0.5">
-              <Check size={12} className="text-background" />
+            <div className="w-6 h-6 rounded-full bg-sage-green flex items-center justify-center flex-shrink-0 mt-0.5">
+              <Check size={14} className="text-white" />
             </div>
           )}
         </button>
