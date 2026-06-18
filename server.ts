@@ -6,6 +6,8 @@
 import express from "express";
 import path from "path";
 import crypto from "crypto";
+import session from "express-session";
+import cookieParser from "cookie-parser";
 import { GoogleGenAI, Type } from "@google/genai";
 import { dbInstance } from "./server/db";
 import { 
@@ -17,12 +19,15 @@ import {
   CareplanTask
 } from "./src/types";
 
-// Setup simple session (single-session simple key stored in memory/cookies for mock auth)
-let currentUserId = "usr-default";
+declare module 'express-session' {
+  interface SessionData {
+    userId: string;
+  }
+}
 
 // Helper to check supportive companion permissions and return authorized user ID
 function getAuthorizedPrimaryId(req: express.Request, category: "calendar" | "documents" | "checkins"): string {
-  const userId = currentUserId;
+  const userId = req.session.userId || "usr-default";
   const viewOwnerId = req.query.viewOwnerId as string;
   
   if (viewOwnerId && viewOwnerId !== userId) {
@@ -49,8 +54,8 @@ function getAuthorizedPrimaryId(req: express.Request, category: "calendar" | "do
   return userId;
 }
 
-function assertNotCompanion(viewOwnerId: string | undefined) {
-  if (viewOwnerId && viewOwnerId !== currentUserId) {
+function assertNotCompanion(req: express.Request, viewOwnerId: string | undefined) {
+  if (viewOwnerId && viewOwnerId !== req.session.userId) {
     throw new Error("Modo Lectura: Los compañeros de apoyo tienen acceso estrictamente de lectura y no pueden modificar ni crear registros.");
   }
 }
@@ -60,6 +65,17 @@ const PORT = process.env.PORT || 3000;
 
 // Trust proxy to detect https correctly on Render
 app.set('trust proxy', 1);
+
+app.use(cookieParser());
+app.use(session({
+  secret: 'tribumental-secret-key-2026',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
+  }
+}));
 
 // Increase limit to allow direct photo uploads (base64) from mobile/web cameras
 app.use(express.json({ limit: "15mb" }));
@@ -80,22 +96,24 @@ function getGeminiClient(): GoogleGenAI | null {
 
 // 1. Session Auth Mock
 app.get("/api/auth/session", (req, res) => {
-  console.log("Checking session for currentUserId:", currentUserId);
-  if (currentUserId === "usr-default") {
+  const userId = req.session.userId;
+  console.log("Checking session for userId:", userId);
+  if (!userId || userId === "usr-default") {
     return res.status(401).json({ error: "No authenticated session" });
   }
-  const user = dbInstance.getUser(currentUserId);
+  const user = dbInstance.getUser(userId);
   if (!user) {
     return res.status(401).json({ error: "No authenticated session" });
   }
-  const profile = dbInstance.getProfile(currentUserId);
-  const subscription = dbInstance.getSubscription(currentUserId);
+  const profile = dbInstance.getProfile(userId);
+  const subscription = dbInstance.getSubscription(userId);
   res.json({ user, profile, subscription });
 });
 
 app.post("/api/auth/logout", (req, res) => {
-  currentUserId = "usr-default";
-  res.json({ success: true });
+  req.session.destroy((err) => {
+    res.json({ success: true });
+  });
 });
 
 app.post("/api/auth/login", (req, res) => {
@@ -104,7 +122,7 @@ app.post("/api/auth/login", (req, res) => {
     return res.status(400).json({ error: "Email and name are required" });
   }
   const user = dbInstance.getOrCreateUser(email, name);
-  currentUserId = user.id;
+  req.session.userId = user.id;
   const profile = dbInstance.getProfile(user.id);
   const subscription = dbInstance.getSubscription(user.id);
   res.json({ user, profile, subscription });
@@ -119,7 +137,7 @@ app.post("/api/auth/signin", (req, res) => {
   if (!user) {
     return res.status(404).json({ error: "Esta cuenta de correo electrónico no está registrada. Por favor, crea una cuenta primero usando la pestaña de registro." });
   }
-  currentUserId = user.id;
+  req.session.userId = user.id;
   const profile = dbInstance.getProfile(user.id);
   const subscription = dbInstance.getSubscription(user.id);
   res.json({ user, profile, subscription });
@@ -465,7 +483,7 @@ app.get("/api/checkins", (req, res) => {
 app.post("/api/checkin", async (req, res) => {
   try {
     const { moodValue, moodEmoji, note, date, viewOwnerId } = req.body;
-    assertNotCompanion(viewOwnerId);
+    assertNotCompanion(req, viewOwnerId);
 
     if (!moodValue || !moodEmoji || !date) {
       return res.status(400).json({ error: "Value, emoji, and date are required" });
@@ -610,7 +628,7 @@ app.post("/api/checkin/:id/conversation", async (req, res) => {
   try {
     const { id } = req.params;
     const { text, viewOwnerId } = req.body;
-    assertNotCompanion(viewOwnerId);
+    assertNotCompanion(req, viewOwnerId);
 
     if (!text || text.trim() === "") {
       return res.status(400).json({ error: "El mensaje no puede estar vacío." });
@@ -735,7 +753,7 @@ app.get("/api/appointments", (req, res) => {
 app.post("/api/appointments", (req, res) => {
   try {
     const { title, date, time, type, doctor, location, notes, reminderActive, viewOwnerId } = req.body;
-    assertNotCompanion(viewOwnerId);
+    assertNotCompanion(req, viewOwnerId);
 
     if (!title || !date || !time || !type || !doctor || !location) {
       return res.status(400).json({ error: "Missing mandatory calendar appointment fields" });
@@ -760,7 +778,7 @@ app.post("/api/appointments", (req, res) => {
 app.put("/api/appointments/:id", (req, res) => {
   try {
     const { viewOwnerId } = req.body;
-    assertNotCompanion(viewOwnerId);
+    assertNotCompanion(req, viewOwnerId);
 
     const updated = dbInstance.updateAppointment(currentUserId, req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: "Not found" });
@@ -773,7 +791,7 @@ app.put("/api/appointments/:id", (req, res) => {
 app.delete("/api/appointments/:id", (req, res) => {
   try {
     const { viewOwnerId } = req.body || req.query;
-    assertNotCompanion(viewOwnerId || (req.query.viewOwnerId as string));
+    assertNotCompanion(req, viewOwnerId || (req.query.viewOwnerId as string));
 
     const success = dbInstance.deleteAppointment(currentUserId, req.params.id);
     res.json({ success });
@@ -796,7 +814,7 @@ app.get("/api/documents", (req, res) => {
 app.post("/api/documents", (req, res) => {
   try {
     const { name, type, fileDataUrl, ocrText, extractedMetadata, appointmentId, size, viewOwnerId } = req.body;
-    assertNotCompanion(viewOwnerId);
+    assertNotCompanion(req, viewOwnerId);
 
     if (!name || !type || !fileDataUrl) {
       return res.status(400).json({ error: "Document name, type and data is required" });
@@ -819,7 +837,7 @@ app.post("/api/documents", (req, res) => {
 app.put("/api/documents/:id", (req, res) => {
   try {
     const { viewOwnerId } = req.body;
-    assertNotCompanion(viewOwnerId);
+    assertNotCompanion(req, viewOwnerId);
 
     const updated = dbInstance.updateDocument(currentUserId, req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: "Not found" });
@@ -832,7 +850,7 @@ app.put("/api/documents/:id", (req, res) => {
 app.delete("/api/documents/:id", (req, res) => {
   try {
     const { viewOwnerId } = req.body || req.query;
-    assertNotCompanion(viewOwnerId || (req.query.viewOwnerId as string));
+    assertNotCompanion(req, viewOwnerId || (req.query.viewOwnerId as string));
 
     const success = dbInstance.deleteDocument(currentUserId, req.params.id);
     res.json({ success });
