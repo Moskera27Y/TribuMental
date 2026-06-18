@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Mail, Lock } from 'lucide-react';
-import { useTribuApi } from '../hooks/useTribuApi';
+import { useTribuApi } from '../hooks/useTribuApi.tsx';
 
 export default function LoginPage() {
   const api = useTribuApi();

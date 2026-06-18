@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
-import { useTribuApi } from "./hooks/useTribuApi";
+import { useTribuApi } from "./hooks/useTribuApi.tsx";
 import { PregnancyStatus, SubscriptionPlan, AppointmentStatus } from "./types";
 import ThemeLayout from "./components/ThemeLayout";
 import LandingPage from "./components/LandingPage";
