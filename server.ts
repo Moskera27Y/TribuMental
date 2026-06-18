@@ -58,6 +58,9 @@ function assertNotCompanion(viewOwnerId: string | undefined) {
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy to detect https correctly on Render
+app.set('trust proxy', 1);
+
 // Increase limit to allow direct photo uploads (base64) from mobile/web cameras
 app.use(express.json({ limit: "15mb" }));
 
