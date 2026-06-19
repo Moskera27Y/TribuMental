@@ -76,9 +76,11 @@ app.use(session({
   secret: 'tribumental-secret-key-2026',
   resave: false,
   saveUninitialized: false,
+  proxy: true,
   cookie: {
-    secure: process.env.NODE_ENV === "production",
-    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 días
+    secure: true,
+    sameSite: 'none',
+    maxAge: 30 * 24 * 60 * 60 * 1000
   }
 }));
 
