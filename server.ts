@@ -1161,63 +1161,58 @@ app.post("/api/documents/analyze", async (req, res) => {
   });
 });
 
-// 8. Simulated WhatsApp Business API Adapter
-app.get("/api/whatsapp/logs", (req, res) => {
-  const logs = dbInstance.getWhatsAppLogs(currentUserId);
-  res.json(logs);
+// 8. WhatsApp Bot & Business API Adapter
+app.get("/api/whatsapp/webhook", (req, res) => {
+  // Verificación para configurar el webhook (usado por Meta/Twilio)
+  const mode = req.query['hub.mode'];
+  const token = req.query['hub.verify_token'];
+  const challenge = req.query['hub.challenge'];
+
+  if (mode && token === 'tribumental-bot-token') {
+    res.status(200).send(challenge);
+  } else {
+    res.sendStatus(403);
+  }
 });
 
-app.post("/api/whatsapp/send", (req, res) => {
-  const { body, category } = req.body;
-  if (!body || !category) {
-    return res.status(400).json({ error: "Message body and category are required" });
-  }
+app.post("/api/whatsapp/webhook", async (req, res) => {
+  try {
+    const { from, body } = req.body; // Formato estándar
+    if (!from || !body) return res.sendStatus(400);
 
-  const profile = dbInstance.getProfile(currentUserId);
-  if (!profile.whatsappEnabled || !profile.whatsappNumber) {
-    return res.status(400).json({ 
-      error: "WhatsApp no está activado para esta usuaria en su configuración de perfil. Debe activarlo e indicar su número." 
-    });
-  }
+    console.log(`[WhatsApp Bot] Mensaje recibido de ${from}: ${body}`);
 
-  // Verify plan limit on WhatsApp interaction
-  const sub = dbInstance.getSubscription(currentUserId);
-  if (sub.plan === SubscriptionPlan.FREE && category === WhatsAppMsgCategory.UTILITY) {
-    // Free users can only receive limited trial notifications
-    const sentCount = dbInstance.getWhatsAppLogs(currentUserId).length;
-    if (sentCount >= 3) {
-      return res.status(403).json({
-        error: "Has alcanzado el límite de 3 mensajes automáticos del Plan Gratuito. Adquiere el plan TribuMental Premium para disponer de acompañamiento y recordatorios por WhatsApp ilimitados sin restricciones."
+    const gemini = getGeminiClient();
+    let aiReply = "¡Hola! Soy Tribu AI. En este momento estoy aprendiendo a responderte mejor. Si necesitas ayuda urgente, usa el botón SOS en la app. 🌸";
+
+    if (gemini) {
+      const systemIns = `Eres Tribu AI, el bot oficial de WhatsApp de TribuMental. Eres una psicóloga perinatal y doula experta.
+      Tu objetivo es dar apoyo emocional corto, tierno y validante.
+      Si la usuaria pregunta por la comunidad, envíale este link: https://chat.whatsapp.com/invite/latribu
+      Si detectas una crisis grave, dile que llame al 112 o use el botón SOS.
+      Responde siempre en español, máximo 3 líneas.`;
+
+      const result = await gemini.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [{ role: "user", parts: [{ text: body }] }],
+        config: { systemInstruction: systemIns }
       });
+      if (result && result.text) aiReply = result.text.trim();
     }
+
+    // Aquí se integraría con el proveedor (Meta/Twilio/etc)
+    // Por ahora, lo guardamos en los logs para que lo veas en la app
+    dbInstance.addWhatsAppLog("usr-default", from, body, WhatsAppMsgCategory.UTILITY, "delivered");
+    dbInstance.addWhatsAppLog("usr-default", "Tribu AI", aiReply, WhatsAppMsgCategory.UTILITY, "sent");
+
+    res.json({ success: true, reply: aiReply });
+  } catch (err) {
+    console.error("WhatsApp Webhook Error:", err);
+    res.sendStatus(500);
   }
-
-  // Simulate pricing calculation (WhatsApp Meta pricing: standard rates)
-  // UTILITY = ~$0.011, MARKETING = ~$0.015, AUTHENTICATION = ~$0.005
-  let estimatedCost = 0.011;
-  if (category === WhatsAppMsgCategory.MARKETING) estimatedCost = 0.015;
-  if (category === WhatsAppMsgCategory.AUTHENTICATION) estimatedCost = 0.005;
-
-  const log = dbInstance.addWhatsAppLog(
-    currentUserId,
-    profile.whatsappNumber,
-    body,
-    category as WhatsAppMsgCategory,
-    "delivered"
-  );
-
-  res.json({
-    success: true,
-    log,
-    costDetails: {
-      category,
-      estimatedCostUSD: estimatedCost,
-      text: `Mensaje enviado al número ${profile.whatsappNumber}`
-    }
-  });
 });
 
-// 9. Wompi Payments Platform Integration with COP Support
+// 9. Wompi Payments Platform...
 app.get("/api/wompi/config", (req, res) => {
   res.json({
     publicKey: process.env.WOMPI_PUBLIC_KEY || ""
