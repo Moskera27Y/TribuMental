@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import "dotenv/config";
 import express from "express";
 import path from "path";
 import crypto from "crypto";
@@ -18,6 +19,10 @@ import {
   WhatsAppMsgCategory,
   CareplanTask
 } from "./src/types";
+
+// Verificación de llaves de Wompi al iniciar
+console.log("[Wompi] Public Key Present:", !!process.env.WOMPI_PUBLIC_KEY);
+console.log("[Wompi] Integrity Key Present:", !!process.env.WOMPI_INTEGRITY_KEY);
 
 declare module 'express-session' {
   interface SessionData {
