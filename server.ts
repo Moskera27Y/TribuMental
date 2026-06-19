@@ -629,12 +629,14 @@ app.get("/api/auth/google/callback", async (req, res) => {
 
 // 2. Profile Management
 app.get("/api/profile", (req, res) => {
-  const profile = dbInstance.getProfile(currentUserId);
+  const userId = req.session.userId || "usr-default";
+  const profile = dbInstance.getProfile(userId);
   res.json(profile);
 });
 
 app.post("/api/profile", (req, res) => {
-  const profile = dbInstance.updateProfile(currentUserId, req.body);
+  const userId = req.session.userId || "usr-default";
+  const profile = dbInstance.updateProfile(userId, req.body);
   res.json(profile);
 });
 
@@ -651,6 +653,7 @@ app.get("/api/checkins", (req, res) => {
 
 app.post("/api/checkin", async (req, res) => {
   try {
+    const userId = req.session.userId || "usr-default";
     const { moodValue, moodEmoji, note, date, viewOwnerId } = req.body;
     assertNotCompanion(req, viewOwnerId);
 
@@ -659,7 +662,7 @@ app.post("/api/checkin", async (req, res) => {
     }
 
     // Define fallback general recommendations if AI is not configured
-    const profile = dbInstance.getProfile(currentUserId);
+    const profile = dbInstance.getProfile(userId);
     const isPregnant = profile.status === PregnancyStatus.PREGNANT;
     
     let recommendations: string[] = [];
@@ -774,7 +777,7 @@ app.post("/api/checkin", async (req, res) => {
       }
     ];
 
-    const saved = dbInstance.addCheckIn(currentUserId, {
+    const saved = dbInstance.addCheckIn(userId, {
       date,
       moodValue,
       moodEmoji,
@@ -795,6 +798,7 @@ app.post("/api/checkin", async (req, res) => {
 // Interactive chat conversation follow-up endpoint
 app.post("/api/checkin/:id/conversation", async (req, res) => {
   try {
+    const userId = req.session.userId || "usr-default";
     const { id } = req.params;
     const { text, viewOwnerId } = req.body;
     assertNotCompanion(req, viewOwnerId);
@@ -803,7 +807,7 @@ app.post("/api/checkin/:id/conversation", async (req, res) => {
       return res.status(400).json({ error: "El mensaje no puede estar vacío." });
     }
 
-    const checkin = dbInstance.getCheckIns(currentUserId).find(c => c.id === id);
+    const checkin = dbInstance.getCheckIns(userId).find(c => c.id === id);
     if (!checkin) {
       return res.status(404).json({ error: "Check-in no encontrado." });
     }
@@ -825,7 +829,7 @@ app.post("/api/checkin/:id/conversation", async (req, res) => {
     const gemini = getGeminiClient();
     if (gemini) {
       try {
-        const profile = dbInstance.getProfile(currentUserId);
+        const profile = dbInstance.getProfile(userId);
         const isPregnant = profile.status === PregnancyStatus.PREGNANT;
 
         const systemIns = `Eres Tribu AI de TribuMental, una psicóloga perinatal y doula experta con amor maternal.
@@ -836,7 +840,7 @@ app.post("/api/checkin/:id/conversation", async (req, res) => {
         - Responde brevemente (máximo 4 líneas por mensaje).
         - Sé sumamente tierna, empática, validante y tranquilizadora.
         - Valida sus sentimientos incondicionalmente.
-        - NO des consejos médicos oficiales, diagnósticos, recetas, ni prescribas suplementos o medicamentos.
+        - NO dar consejos médicos oficiales, diagnósticos, recetas, ni prescribas suplementos o medicamentos.
         - Si menciona síntomas físicos graves o peligro, recuérdale cariñosamente hablar con su ginecóloga/obstetra de cabecera de inmediato y muéstrale el centro de ayuda de crisis de TribuMental (024 / 112).`;
 
         const geminiHistory = checkin.chatThread.map(msg => ({
@@ -878,16 +882,18 @@ app.post("/api/checkin/:id/conversation", async (req, res) => {
 
 // 4. Reminders
 app.get("/api/reminders", (req, res) => {
-  const reminders = dbInstance.getReminders(currentUserId);
+  const userId = req.session.userId || "usr-default";
+  const reminders = dbInstance.getReminders(userId);
   res.json(reminders);
 });
 
 app.post("/api/reminders", (req, res) => {
+  const userId = req.session.userId || "usr-default";
   const { title, time, days, channel } = req.body;
   if (!title || !time || !days || !channel) {
     return res.status(400).json({ error: "Missing fields" });
   }
-  const newRem = dbInstance.addReminder(currentUserId, {
+  const newRem = dbInstance.addReminder(userId, {
     title,
     time,
     days,
@@ -898,13 +904,15 @@ app.post("/api/reminders", (req, res) => {
 });
 
 app.put("/api/reminders/:id", (req, res) => {
-  const updated = dbInstance.updateReminder(currentUserId, req.params.id, req.body);
+  const userId = req.session.userId || "usr-default";
+  const updated = dbInstance.updateReminder(userId, req.params.id, req.body);
   if (!updated) return res.status(404).json({ error: "Not found" });
   res.json(updated);
 });
 
 app.delete("/api/reminders/:id", (req, res) => {
-  const success = dbInstance.deleteReminder(currentUserId, req.params.id);
+  const userId = req.session.userId || "usr-default";
+  const success = dbInstance.deleteReminder(userId, req.params.id);
   res.json({ success });
 });
 
@@ -921,13 +929,14 @@ app.get("/api/appointments", (req, res) => {
 
 app.post("/api/appointments", (req, res) => {
   try {
+    const userId = req.session.userId || "usr-default";
     const { title, date, time, type, doctor, location, notes, reminderActive, viewOwnerId } = req.body;
     assertNotCompanion(req, viewOwnerId);
 
     if (!title || !date || !time || !type || !doctor || !location) {
       return res.status(400).json({ error: "Missing mandatory calendar appointment fields" });
     }
-    const newAppt = dbInstance.addAppointment(currentUserId, {
+    const newAppt = dbInstance.addAppointment(userId, {
       title,
       date,
       time,
@@ -946,10 +955,11 @@ app.post("/api/appointments", (req, res) => {
 
 app.put("/api/appointments/:id", (req, res) => {
   try {
+    const userId = req.session.userId || "usr-default";
     const { viewOwnerId } = req.body;
     assertNotCompanion(req, viewOwnerId);
 
-    const updated = dbInstance.updateAppointment(currentUserId, req.params.id, req.body);
+    const updated = dbInstance.updateAppointment(userId, req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: "Not found" });
     res.json(updated);
   } catch (err: any) {
@@ -959,10 +969,11 @@ app.put("/api/appointments/:id", (req, res) => {
 
 app.delete("/api/appointments/:id", (req, res) => {
   try {
+    const userId = req.session.userId || "usr-default";
     const { viewOwnerId } = req.body || req.query;
     assertNotCompanion(req, viewOwnerId || (req.query.viewOwnerId as string));
 
-    const success = dbInstance.deleteAppointment(currentUserId, req.params.id);
+    const success = dbInstance.deleteAppointment(userId, req.params.id);
     res.json({ success });
   } catch (err: any) {
     res.status(403).json({ error: err.message });
@@ -982,13 +993,14 @@ app.get("/api/documents", (req, res) => {
 
 app.post("/api/documents", (req, res) => {
   try {
+    const userId = req.session.userId || "usr-default";
     const { name, type, fileDataUrl, ocrText, extractedMetadata, appointmentId, size, viewOwnerId } = req.body;
     assertNotCompanion(req, viewOwnerId);
 
     if (!name || !type || !fileDataUrl) {
       return res.status(400).json({ error: "Document name, type and data is required" });
     }
-    const newDoc = dbInstance.addDocument(currentUserId, {
+    const newDoc = dbInstance.addDocument(userId, {
       name,
       type,
       fileDataUrl,
@@ -1005,10 +1017,11 @@ app.post("/api/documents", (req, res) => {
 
 app.put("/api/documents/:id", (req, res) => {
   try {
+    const userId = req.session.userId || "usr-default";
     const { viewOwnerId } = req.body;
     assertNotCompanion(req, viewOwnerId);
 
-    const updated = dbInstance.updateDocument(currentUserId, req.params.id, req.body);
+    const updated = dbInstance.updateDocument(userId, req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: "Not found" });
     res.json(updated);
   } catch (err: any) {
@@ -1018,10 +1031,11 @@ app.put("/api/documents/:id", (req, res) => {
 
 app.delete("/api/documents/:id", (req, res) => {
   try {
+    const userId = req.session.userId || "usr-default";
     const { viewOwnerId } = req.body || req.query;
     assertNotCompanion(req, viewOwnerId || (req.query.viewOwnerId as string));
 
-    const success = dbInstance.deleteDocument(currentUserId, req.params.id);
+    const success = dbInstance.deleteDocument(userId, req.params.id);
     res.json({ success });
   } catch (err: any) {
     res.status(403).json({ error: err.message });
