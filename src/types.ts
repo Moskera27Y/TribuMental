@@ -54,6 +54,9 @@ export interface Profile {
   whatsappNumber: string;
   reminderFrequency: "daily" | "weekly" | "none";
   onboarded: boolean;
+  lastMentalHealthScore?: number; // 1-10
+  mentalHealthProfile?: string; // AI generated summary
+  mentalHealthSuggestions?: string[]; // AI generated actions
 }
 
 export interface Subscription {

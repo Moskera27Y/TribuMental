@@ -304,7 +304,10 @@ class LocalDatabase {
         whatsappEnabled: false,
         whatsappNumber: "",
         reminderFrequency: "daily",
-        onboarded: false
+        onboarded: false,
+        lastMentalHealthScore: undefined,
+        mentalHealthProfile: undefined,
+        mentalHealthSuggestions: []
       });
 
       this.data.subscriptions.push({
@@ -330,7 +333,10 @@ class LocalDatabase {
         whatsappEnabled: false,
         whatsappNumber: "",
         reminderFrequency: "daily",
-        onboarded: false
+        onboarded: false,
+        lastMentalHealthScore: undefined,
+        mentalHealthProfile: undefined,
+        mentalHealthSuggestions: []
       };
       this.data.profiles.push(profile);
       this.save();

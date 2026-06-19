@@ -128,6 +128,79 @@ app.post("/api/auth/login", (req, res) => {
   res.json({ user, profile, subscription });
 });
 
+// --- Mental Health Analysis ---
+app.post("/api/mental-health/analyze", async (req, res) => {
+  try {
+    const { answers } = req.body;
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    if (!answers || !Array.isArray(answers)) {
+      return res.status(400).json({ error: "Answers array is required" });
+    }
+
+    const gemini = getGeminiClient();
+    let score = 5;
+    let profileSummary = "Perfil en proceso de evaluación.";
+    let suggestions = ["Continúa monitoreando tu estado de ánimo diariamente.", "Busca momentos de descanso siempre que sea posible."];
+
+    if (gemini) {
+      const prompt = `Como psicólogo perinatal experto, analiza las siguientes 15 respuestas de una madre a un tamizaje de bienestar mental.
+      Respuestas: ${answers.join(" | ")}
+
+      Debes devolver un JSON con este esquema exacto:
+      {
+        "score": number (de 1 a 10, donde 1 es bienestar óptimo y 10 es riesgo alto/necesidad de ayuda urgente),
+        "profileSummary": "Un párrafo corto (3-4 líneas) empático, clínico y cálido describiendo su estado emocional predominante",
+        "suggestions": ["Sugerencia 1 (máx 10 palabras)", "Sugerencia 2", "Sugerencia 3"] (Exactamente 3 sugerencias prácticas)
+      }
+
+      Reglas:
+      - Sé sumamente respetuoso y validante.
+      - Si el score es > 7, sugiere fuertemente buscar apoyo profesional de salud mental de inmediato.
+      - Responde SOLO con el JSON puro.`;
+
+      try {
+        const response = await gemini.models.generateContent({
+          model: "gemini-1.5-flash",
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                score: { type: Type.NUMBER },
+                profileSummary: { type: Type.STRING },
+                suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
+              },
+              required: ["score", "profileSummary", "suggestions"]
+            }
+          }
+        });
+
+        if (response && response.text) {
+          const result = JSON.parse(response.text.trim());
+          score = result.score;
+          profileSummary = result.profileSummary;
+          suggestions = result.suggestions;
+        }
+      } catch (err) {
+        console.error("Gemini mental health analysis failed", err);
+      }
+    }
+
+    const updatedProfile = dbInstance.updateProfile(userId, {
+      lastMentalHealthScore: score,
+      mentalHealthProfile: profileSummary,
+      mentalHealthSuggestions: suggestions
+    });
+
+    res.json({ success: true, profile: updatedProfile });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post("/api/auth/signin", (req, res) => {
   const { email } = req.body;
   if (!email) {
@@ -141,6 +214,79 @@ app.post("/api/auth/signin", (req, res) => {
   const profile = dbInstance.getProfile(user.id);
   const subscription = dbInstance.getSubscription(user.id);
   res.json({ user, profile, subscription });
+});
+
+// --- Mental Health Analysis ---
+app.post("/api/mental-health/analyze", async (req, res) => {
+  try {
+    const { answers } = req.body;
+    const userId = req.session.userId;
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
+    if (!answers || !Array.isArray(answers)) {
+      return res.status(400).json({ error: "Answers array is required" });
+    }
+
+    const gemini = getGeminiClient();
+    let score = 5;
+    let profileSummary = "Perfil en proceso de evaluación.";
+    let suggestions = ["Continúa monitoreando tu estado de ánimo diariamente.", "Busca momentos de descanso siempre que sea posible."];
+
+    if (gemini) {
+      const prompt = `Como psicólogo perinatal experto, analiza las siguientes 15 respuestas de una madre a un tamizaje de bienestar mental.
+      Respuestas: ${answers.join(" | ")}
+
+      Debes devolver un JSON con este esquema exacto:
+      {
+        "score": number (de 1 a 10, donde 1 es bienestar óptimo y 10 es riesgo alto/necesidad de ayuda urgente),
+        "profileSummary": "Un párrafo corto (3-4 líneas) empático, clínico y cálido describiendo su estado emocional predominante",
+        "suggestions": ["Sugerencia 1 (máx 10 palabras)", "Sugerencia 2", "Sugerencia 3"] (Exactamente 3 sugerencias prácticas)
+      }
+
+      Reglas:
+      - Sé sumamente respetuoso y validante.
+      - Si el score es > 7, sugiere fuertemente buscar apoyo profesional de salud mental de inmediato.
+      - Responde SOLO con el JSON puro.`;
+
+      try {
+        const response = await gemini.models.generateContent({
+          model: "gemini-1.5-flash",
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: Type.OBJECT,
+              properties: {
+                score: { type: Type.NUMBER },
+                profileSummary: { type: Type.STRING },
+                suggestions: { type: Type.ARRAY, items: { type: Type.STRING } }
+              },
+              required: ["score", "profileSummary", "suggestions"]
+            }
+          }
+        });
+
+        if (response && response.text) {
+          const result = JSON.parse(response.text.trim());
+          score = result.score;
+          profileSummary = result.profileSummary;
+          suggestions = result.suggestions;
+        }
+      } catch (err) {
+        console.error("Gemini mental health analysis failed", err);
+      }
+    }
+
+    const updatedProfile = dbInstance.updateProfile(userId, {
+      lastMentalHealthScore: score,
+      mentalHealthProfile: profileSummary,
+      mentalHealthSuggestions: suggestions
+    });
+
+    res.json({ success: true, profile: updatedProfile });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // --- Google Sign-In & OAuth 2.0 Integration ---

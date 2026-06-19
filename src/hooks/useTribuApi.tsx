@@ -61,6 +61,7 @@ interface TribuContextType {
   sendWhatsAppMessage: (body: string, category: any) => Promise<any>;
   handleCheckout: (plan: string) => Promise<any>;
   getGoogleAuthUrl: () => Promise<any>;
+  analyzeMentalHealth: (answers: string[]) => Promise<any>;
 }
 
 const TribuApiContext = createContext<TribuContextType | undefined>(undefined);
@@ -409,6 +410,18 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
     }
   }, [user, viewOwnerId, fetchCareplan, fetchCheckins, fetchAppointments, fetchDocuments, fetchCompanionData]);
 
+  const analyzeMentalHealth = async (answers: string[]) => {
+    const res = await fetch("/api/mental-health/analyze", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers })
+    });
+    if (!res.ok) throw new Error("Error analizando perfil psicológico");
+    const data = await res.json();
+    setProfile(data.profile);
+    return data;
+  };
+
   const value = {
     user, profile, subscription, checkins, reminders, appointments, documents,
     whatsappLogs, supportContacts, careplanTasks, viewOwnerId, setViewOwnerId,
@@ -418,7 +431,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
     setError: setErrorString, refreshSession, login, signin, logout: handleLogout,
     updateProfile, addCheckIn, addAppointment, updateAppointment, deleteAppointment,
     addDocument, updateDocument, deleteDocument, analyzeDocument, sendWhatsAppMessage,
-    handleCheckout, getGoogleAuthUrl
+    handleCheckout, getGoogleAuthUrl, analyzeMentalHealth
   };
 
   return <TribuApiContext.Provider value={value}>{children}</TribuApiContext.Provider>;

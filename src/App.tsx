@@ -13,6 +13,7 @@ import RegisterPage from "./components/RegisterPage";
 import LoginPage from "./components/LoginPage";
 import OnboardingFlow from "./components/OnboardingFlow";
 import DailyCheckIn from "./components/DailyCheckIn";
+import MentalHealthTest from "./components/MentalHealthTest";
 import CalendarModule from "./components/CalendarModule";
 import DocumentScanner from "./components/DocumentScanner";
 import WhatsAppMonitor from "./components/WhatsAppMonitor";
@@ -54,6 +55,7 @@ export default function App() {
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);
   const [paidPlan, setPaidPlan] = useState("");
   const [transitionLoading, setTransitionLoading] = useState(false);
+  const [showMentalTest, setShowMentalTest] = useState(false);
 
   const [wompiModalData, setWompiModalData] = useState<any | null>(null);
   const [wompiTab, setWompiTab] = useState<"card" | "pse" | "nequi">("card");
@@ -231,8 +233,21 @@ export default function App() {
 
   const Dashboard = () => {
     const isPregnant = api.profile?.status === PregnancyStatus.PREGNANT;
+    const hasMentalScore = api.profile?.lastMentalHealthScore !== undefined;
+
     return (
       <div className="space-y-8 animate-fadeIn">
+        {showMentalTest && (
+          <div className="fixed inset-0 z-[60] bg-[#2F3E46]/60 backdrop-blur-md flex items-center justify-center p-4 antialiased">
+            <div className="max-w-2xl w-full">
+              <MentalHealthTest
+                onComplete={async (answers) => { await api.analyzeMentalHealth(answers); }}
+                onClose={() => setShowMentalTest(false)}
+              />
+            </div>
+          </div>
+        )}
+
         <div className="bg-white border border-[#ECE8E0] rounded-[32px] p-6 md:p-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 shadow-sm">
           <div className="space-y-2">
             <span className="text-[10px] tracking-widest text-[#A3A19E] uppercase font-bold flex items-center gap-1.5 font-sans">
@@ -256,6 +271,91 @@ export default function App() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           <div className="lg:col-span-7 space-y-6">
+            {/* Panel de Novedades de Bienestar */}
+            <div className="bg-white rounded-[40px] border border-[#ECE8E0] overflow-hidden shadow-sm">
+              <div className="bg-[#8C9B73]/10 p-5 border-b border-[#ECE8E0] flex justify-between items-center">
+                <h3 className="text-xs font-bold text-[#5A634D] uppercase tracking-widest flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-[#8C9B73]" />
+                  Novedades de Bienestar
+                </h3>
+                {hasMentalScore && (
+                  <button
+                    onClick={() => setShowMentalTest(true)}
+                    className="text-[10px] font-bold text-[#8C9B73] hover:underline cursor-pointer"
+                  >
+                    Repetir Evaluación
+                  </button>
+                )}
+              </div>
+              <div className="p-6">
+                {!hasMentalScore ? (
+                  <div className="flex flex-col items-center text-center space-y-4 py-4">
+                    <div className="w-14 h-14 bg-[#F4F1ED] rounded-full flex items-center justify-center border border-[#ECE8E0]">
+                      <BrainCircuit className="w-7 h-7 text-[#8C9B73]" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <h4 className="text-sm font-serif font-semibold text-[#2F3E46]">Conoce tu Perfil de Bienestar</h4>
+                      <p className="text-xs text-[#7A7875] max-w-xs leading-relaxed">
+                        Realiza nuestra evaluación profesional de 15 preguntas para que Tribu AI analice tu estado emocional actual.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setShowMentalTest(true)}
+                      className="bg-[#2F3E46] text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-md hover:opacity-90 transition-all cursor-pointer"
+                    >
+                      Iniciar Evaluación Profesional
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="flex items-start gap-4">
+                      <div className="shrink-0 flex flex-col items-center">
+                        <div className="w-12 h-12 rounded-full border-4 border-[#8C9B73]/20 flex items-center justify-center relative">
+                          <span className="text-sm font-bold text-[#2F3E46]">{api.profile?.lastMentalHealthScore}</span>
+                          <svg className="absolute inset-0 w-full h-full -rotate-90">
+                            <circle
+                              cx="24" cy="24" r="20" fill="transparent" stroke="#8C9B73" strokeWidth="4"
+                              strokeDasharray={`${(api.profile?.lastMentalHealthScore || 0) * 12.56} 125.6`}
+                              className="transition-all duration-1000"
+                            />
+                          </svg>
+                        </div>
+                        <span className="text-[8px] font-bold text-[#A3A19E] uppercase mt-1">Score</span>
+                      </div>
+                      <div className="space-y-2 flex-1">
+                        <p className="text-xs font-bold text-[#2F3E46]">Perfil de Tribu AI:</p>
+                        <p className="text-[11px] text-[#7A7875] leading-relaxed italic border-l-2 border-[#8C9B73]/30 pl-3">
+                          "{api.profile?.mentalHealthProfile}"
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-2 border-t border-[#ECE8E0]">
+                      <p className="text-[10px] font-bold text-[#A3A19E] uppercase tracking-widest">Sugerencias de la IA para hoy:</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        {api.profile?.mentalHealthSuggestions?.map((sug, idx) => (
+                          <div key={idx} className="p-2.5 bg-[#FBF9F4] border border-[#ECE8E0] rounded-xl flex items-center gap-2">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#8C9B73]" />
+                            <p className="text-[10px] text-[#5A634D] leading-tight font-medium">{sug}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {(api.profile?.lastMentalHealthScore || 0) > 7 && (
+                      <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100 flex items-center gap-3">
+                        <ShieldAlert className="w-5 h-5 text-rose-500 shrink-0" />
+                        <div className="space-y-0.5">
+                          <p className="text-[10px] font-bold text-rose-700 uppercase">Aviso de Soporte</p>
+                          <p className="text-[10px] text-rose-600 leading-tight">Tu puntuación indica que podrías beneficiarte de hablar con un profesional. Considera usar nuestro botón SOS.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
             {nextAppointment ? (
               <div className="p-5 rounded-3xl bg-white border border-[#ECE8E0] shadow-sm space-y-3.5 relative overflow-hidden">
                 <div className="absolute top-0 inset-x-0 h-1 bg-[#8C9B73]"></div>
