@@ -479,6 +479,13 @@ export default function App() {
                   <span>S.O.S</span>
                 </button>
               </div>
+              <button
+                onClick={() => window.open("https://chat.whatsapp.com/invite/latribu", "_blank")}
+                className="w-full p-3 rounded-2xl bg-[#E9C4C4]/10 border border-[#E9C4C4]/30 text-[#8B5E5E] text-center hover:bg-[#E9C4C4]/20 transition-all font-bold flex items-center justify-center gap-2 cursor-pointer mt-2"
+              >
+                <Users size={16} />
+                <span className="text-xs">Comunidad "La Tribu" 🌸</span>
+              </button>
             </div>
           </div>
         </div>

@@ -50,6 +50,7 @@ export default function ThemeLayout({
     { id: "dashboard", label: "Mi Portal", icon: Heart },
     { id: "calendar", label: "Mis Citas", icon: Calendar },
     { id: "documents", label: "Mis Expedientes", icon: FileText },
+    { id: "community", label: "Comunidad La Tribu", icon: Users, isCommunity: true },
     { id: "whatsapp_bot", label: "Bot de WhatsApp", icon: MessageSquare, isExternal: true },
     { id: "whatsapp", label: "Simulador WPP", icon: MessageSquare },
     { id: "companion", label: "Plan Familiar / Apoyo", icon: Users, badge: receivedInvitations?.length || 0 },
@@ -57,9 +58,11 @@ export default function ThemeLayout({
     { id: "profile", label: "Mi Cuenta", icon: User },
   ];
 
-  const handleNavClick = (id: string, isExternal?: boolean) => {
-    if (isExternal) {
+  const handleNavClick = (id: string, options?: { isExternal?: boolean, isCommunity?: boolean }) => {
+    if (options?.isExternal) {
       window.open("https://wa.me/573000000000", "_blank");
+    } else if (options?.isCommunity) {
+      window.open("https://chat.whatsapp.com/invite/latribu", "_blank"); // Reemplazar con link real
     } else {
       setActiveNav(id);
     }
@@ -167,7 +170,7 @@ export default function ThemeLayout({
                 return (
                   <button
                     key={item.id}
-                    onClick={() => handleNavClick(item.id, (item as any).isExternal)}
+                    onClick={() => handleNavClick(item.id, { isExternal: (item as any).isExternal, isCommunity: (item as any).isCommunity })}
                     className={`w-full text-left px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center justify-between gap-3 cursor-pointer ${
                       isActive
                         ? "bg-[#F4F1ED] text-[#5A634D] font-semibold border-l-4 border-[#8C9B73]"
