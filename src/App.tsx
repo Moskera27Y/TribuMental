@@ -199,11 +199,13 @@ export default function App() {
   const handleCompleteOnboarding = async (onboardingData: any) => {
     setTransitionLoading(true);
     try {
-      await api.updateProfile(onboardingData);
+      await api.updateProfile({ ...onboardingData, onboarded: true });
+      // Forzamos un refresco de la sesión para asegurar que el estado global tenga onboarded: true
+      await api.refreshSession();
       setTimeout(() => {
         setTransitionLoading(false);
-        navigate("/dashboard");
-      }, 1500);
+        navigate("/dashboard", { replace: true });
+      }, 1000);
     } catch (err) {
       console.error("Onboarding saving failed:", err);
       setTransitionLoading(false);
