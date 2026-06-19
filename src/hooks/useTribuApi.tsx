@@ -19,6 +19,7 @@ import {
   CompanionInvitation,
   CompanionRelation
 } from "../types";
+import { Capacitor } from '@capacitor/core';
 
 interface TribuContextType {
   user: User | null;
@@ -87,13 +88,19 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [errorString, setErrorString] = useState<string | null>(null);
 
+  // Determinar la URL base de la API
+  const getBaseUrl = () => {
+    if (Capacitor.isNativePlatform()) {
+      return 'https://tribumental.onrender.com';
+    }
+    return '';
+  };
+
   const refreshSession = useCallback(async () => {
     try {
       setLoading(true);
       setErrorString(null);
-      // Usamos la URL absoluta si estamos en modo nativo (APK)
-      const baseUrl = window.location.origin.includes('localhost') ? '' : 'https://tribumental.onrender.com';
-      const res = await fetch(`${baseUrl}/api/auth/session`);
+      const res = await fetch(`${getBaseUrl()}/api/auth/session`);
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
@@ -106,7 +113,9 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
       }
     } catch (err: any) {
       console.error("Failed to load TribuMental session:", err);
-      setErrorString("Error de conexión al cargar la sesión.");
+      if (Capacitor.isNativePlatform()) {
+        setErrorString("Error de conexión al cargar la sesión.");
+      }
     } finally {
       setLoading(false);
     }
@@ -115,7 +124,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   const login = async (name: string, email: string) => {
     try {
       setLoading(true);
-      const res = await fetch("/api/auth/login", {
+      const res = await fetch(`${getBaseUrl()}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email })
@@ -134,7 +143,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   const signin = async (email: string) => {
     try {
       setLoading(true);
-      const res = await fetch("/api/auth/signin", {
+      const res = await fetch(`${getBaseUrl()}/api/auth/signin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
@@ -154,13 +163,13 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const getGoogleAuthUrl = async () => {
-    const res = await fetch("/api/auth/google/url");
+    const res = await fetch(`${getBaseUrl()}/api/auth/google/url`);
     if (!res.ok) throw new Error("Error conectando con el servicio de autenticación.");
     return await res.json();
   };
 
   const updateProfile = async (updates: Partial<Profile>) => {
-    const res = await fetch("/api/profile", {
+    const res = await fetch(`${getBaseUrl()}/api/profile`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates)
@@ -174,7 +183,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
 
   const fetchCareplan = useCallback(async () => {
     try {
-      const res = await fetch("/api/careplan");
+      const res = await fetch(`${getBaseUrl()}/api/careplan`);
       if (res.ok) setCareplanTasks(await res.json());
     } catch (err) { console.error("Error loading care tasks", err); }
   }, []);
@@ -182,7 +191,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   const fetchCheckins = useCallback(async (viewOwner?: string) => {
     try {
       const owner = viewOwner !== undefined ? viewOwner : viewOwnerId;
-      const url = owner ? `/api/checkins?viewOwnerId=${owner}` : "/api/checkins";
+      const url = owner ? `${getBaseUrl()}/api/checkins?viewOwnerId=${owner}` : `${getBaseUrl()}/api/checkins`;
       const res = await fetch(url);
       if (res.ok) setCheckins(await res.json());
     } catch (err) { console.error("Error loading check-ins", err); }
@@ -190,7 +199,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
 
   const addCheckIn = async (moodValue: number, moodEmoji: string, note?: string) => {
     const todayString = new Date().toISOString().split("T")[0];
-    const res = await fetch("/api/checkin", {
+    const res = await fetch(`${getBaseUrl()}/api/checkin`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ moodValue, moodEmoji, note, date: todayString })
@@ -204,14 +213,14 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   const fetchAppointments = useCallback(async (viewOwner?: string) => {
     try {
       const owner = viewOwner !== undefined ? viewOwner : viewOwnerId;
-      const url = owner ? `/api/appointments?viewOwnerId=${owner}` : "/api/appointments";
+      const url = owner ? `${getBaseUrl()}/api/appointments?viewOwnerId=${owner}` : `${getBaseUrl()}/api/appointments`;
       const res = await fetch(url);
       if (res.ok) setAppointments(await res.json());
     } catch (err) { console.error("Error loading calendar appointments", err); }
   }, [viewOwnerId]);
 
   const addAppointment = async (appt: any) => {
-    const res = await fetch("/api/appointments", {
+    const res = await fetch(`${getBaseUrl()}/api/appointments`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(appt)
@@ -223,7 +232,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const updateAppointment = async (id: string, updates: any) => {
-    const res = await fetch(`/api/appointments/${id}`, {
+    const res = await fetch(`${getBaseUrl()}/api/appointments/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates)
@@ -235,7 +244,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteAppointment = async (id: string) => {
-    const res = await fetch(`/api/appointments/${id}`, { method: "DELETE" });
+    const res = await fetch(`${getBaseUrl()}/api/appointments/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("No se pudo eliminar la cita");
     setAppointments(prev => prev.filter(a => a.id !== id));
     return true;
@@ -244,14 +253,14 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   const fetchDocuments = useCallback(async (viewOwner?: string) => {
     try {
       const owner = viewOwner !== undefined ? viewOwner : viewOwnerId;
-      const url = owner ? `/api/documents?viewOwnerId=${owner}` : "/api/documents";
+      const url = owner ? `${getBaseUrl()}/api/documents?viewOwnerId=${owner}` : `${getBaseUrl()}/api/documents`;
       const res = await fetch(url);
       if (res.ok) setDocuments(await res.json());
     } catch (err) { console.error("Error loading documents", err); }
   }, [viewOwnerId]);
 
   const addDocument = async (doc: any) => {
-    const res = await fetch("/api/documents", {
+    const res = await fetch(`${getBaseUrl()}/api/documents`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(doc)
@@ -263,7 +272,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const updateDocument = async (id: string, updates: any) => {
-    const res = await fetch(`/api/documents/${id}`, {
+    const res = await fetch(`${getBaseUrl()}/api/documents/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates)
@@ -275,14 +284,14 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const deleteDocument = async (id: string) => {
-    const res = await fetch(`/api/documents/${id}`, { method: "DELETE" });
+    const res = await fetch(`${getBaseUrl()}/api/documents/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("No se pudo eliminar el documento");
     setDocuments(prev => prev.filter(d => d.id !== id));
     return true;
   };
 
   const analyzeDocument = async (fileName: string, fileType: string, fileDataUrl: string) => {
-    const res = await fetch("/api/documents/analyze", {
+    const res = await fetch(`${getBaseUrl()}/api/documents/analyze`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ fileName, fileType, fileDataUrl })
@@ -292,7 +301,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const sendWhatsAppMessage = async (body: string, category: any) => {
-    const res = await fetch("/api/whatsapp/send", {
+    const res = await fetch(`${getBaseUrl()}/api/whatsapp/send`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ body, category })
@@ -307,7 +316,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const handleCheckout = async (plan: string) => {
-    const res = await fetch("/api/wompi/checkout", {
+    const res = await fetch(`${getBaseUrl()}/api/wompi/checkout`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ plan })
@@ -319,9 +328,9 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   const fetchCompanionData = useCallback(async () => {
     try {
       const [relRes, sentRes, recvRes] = await Promise.all([
-        fetch("/api/companion/relations"),
-        fetch("/api/companion/invitations/sent"),
-        fetch("/api/companion/invitations/received")
+        fetch(`${getBaseUrl()}/api/companion/relations`),
+        fetch(`${getBaseUrl()}/api/companion/invitations/sent`),
+        fetch(`${getBaseUrl()}/api/companion/invitations/received`)
       ]);
       if (relRes.ok) setCompanionRelations(await relRes.json());
       if (sentRes.ok) setSentInvitations(await sentRes.json());
@@ -330,7 +339,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const sendCompanionInvitation = async (companionEmail: string, companionName: string, permissions: CompanionPermissions) => {
-    const res = await fetch("/api/companion/invitations", {
+    const res = await fetch(`${getBaseUrl()}/api/companion/invitations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ companionEmail, companionName, permissions })
@@ -345,7 +354,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const respondToInvitation = async (id: string, status: "accepted" | "declined") => {
-    const res = await fetch(`/api/companion/invitations/${id}/respond`, {
+    const res = await fetch(`${getBaseUrl()}/api/companion/invitations/${id}/respond`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status })
@@ -356,7 +365,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const updateCompanionPermissions = async (id: string, permissions: CompanionPermissions) => {
-    const res = await fetch(`/api/companion/relations/${id}/permissions`, {
+    const res = await fetch(`${getBaseUrl()}/api/companion/relations/${id}/permissions`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ permissions })
@@ -368,7 +377,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const revokeCompanionRelation = async (id: string) => {
-    const res = await fetch(`/api/companion/relations/${id}`, { method: "DELETE" });
+    const res = await fetch(`${getBaseUrl()}/api/companion/relations/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("No se pudo revocar la conexión");
     setCompanionRelations(prev => ({
       asPrimary: prev.asPrimary.filter(r => r.id !== id),
@@ -379,7 +388,7 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
   };
 
   const addCheckInConversationMessage = async (checkInId: string, text: string) => {
-    const res = await fetch(`/api/checkin/${checkInId}/conversation`, {
+    const res = await fetch(`${getBaseUrl()}/api/checkin/${checkInId}/conversation`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text, viewOwnerId })
@@ -390,9 +399,21 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
     return updatedCheckIn;
   };
 
+  const analyzeMentalHealth = async (answers: string[]) => {
+    const res = await fetch(`${getBaseUrl()}/api/mental-health/analyze`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ answers })
+    });
+    if (!res.ok) throw new Error("Error analizando perfil psicológico");
+    const data = await res.json();
+    setProfile(data.profile);
+    return data;
+  };
+
   const handleLogout = async () => {
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
+      await fetch(`${getBaseUrl()}/api/auth/logout`, { method: "POST" });
       setUser(null); setProfile(null); setSubscription(null);
       window.location.href = "/";
     } catch (err) { window.location.reload(); }
@@ -409,18 +430,6 @@ export function TribuApiProvider({ children }: { children: ReactNode }) {
       fetchCompanionData();
     }
   }, [user, viewOwnerId, fetchCareplan, fetchCheckins, fetchAppointments, fetchDocuments, fetchCompanionData]);
-
-  const analyzeMentalHealth = async (answers: string[]) => {
-    const res = await fetch("/api/mental-health/analyze", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ answers })
-    });
-    if (!res.ok) throw new Error("Error analizando perfil psicológico");
-    const data = await res.json();
-    setProfile(data.profile);
-    return data;
-  };
 
   const value = {
     user, profile, subscription, checkins, reminders, appointments, documents,
