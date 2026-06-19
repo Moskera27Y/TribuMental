@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "239071336524",
+    "project_id": "tribumental-698a3",
+    "storage_bucket": "tribumental-698a3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:239071336524:android:605f99798a4f4beae07ce9",
+        "android_client_info": {
+          "package_name": "com.tribumental.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNHUbahuV3Hn1_nkTbCklHsoQdcFa7hIs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
