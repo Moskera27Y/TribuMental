@@ -41,6 +41,11 @@ export interface User {
   createdAt: string;
 }
 
+export interface MentalHealthRecord {
+  date: string;
+  score: number;
+}
+
 export interface Profile {
   userId: string;
   status: PregnancyStatus;
@@ -57,6 +62,7 @@ export interface Profile {
   lastMentalHealthScore?: number; // 1-10
   mentalHealthProfile?: string; // AI generated summary
   mentalHealthSuggestions?: string[]; // AI generated actions
+  mentalHealthHistory?: MentalHealthRecord[];
 }
 
 export interface Subscription {

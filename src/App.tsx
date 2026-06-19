@@ -15,6 +15,7 @@ import OnboardingFlow from "./components/OnboardingFlow";
 import DailyCheckIn from "./components/DailyCheckIn";
 import MentalHealthTest from "./components/MentalHealthTest";
 import CalendarModule from "./components/CalendarModule";
+import { Share2, TrendingUp, Users } from "lucide-react";
 import DocumentScanner from "./components/DocumentScanner";
 import WhatsAppMonitor from "./components/WhatsAppMonitor";
 import PricingCentre from "./components/PricingCentre";
@@ -307,40 +308,84 @@ export default function App() {
                     </button>
                   </div>
                 ) : (
-                  <div className="space-y-6">
-                    <div className="flex items-start gap-4">
-                      <div className="shrink-0 flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-full border-4 border-[#8C9B73]/20 flex items-center justify-center relative">
-                          <span className="text-sm font-bold text-[#2F3E46]">{api.profile?.lastMentalHealthScore}</span>
-                          <svg className="absolute inset-0 w-full h-full -rotate-90">
-                            <circle
-                              cx="24" cy="24" r="20" fill="transparent" stroke="#8C9B73" strokeWidth="4"
-                              strokeDasharray={`${(api.profile?.lastMentalHealthScore || 0) * 12.56} 125.6`}
-                              className="transition-all duration-1000"
-                            />
-                          </svg>
-                        </div>
-                        <span className="text-[8px] font-bold text-[#A3A19E] uppercase mt-1">Score</span>
-                      </div>
-                      <div className="space-y-2 flex-1">
-                        <p className="text-xs font-bold text-[#2F3E46]">Perfil de Tribu AI:</p>
-                        <p className="text-[11px] text-[#7A7875] leading-relaxed italic border-l-2 border-[#8C9B73]/30 pl-3">
-                          "{api.profile?.mentalHealthProfile}"
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-3 pt-2 border-t border-[#ECE8E0]">
-                      <p className="text-[10px] font-bold text-[#A3A19E] uppercase tracking-widest">Sugerencias de la IA para hoy:</p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                        {api.profile?.mentalHealthSuggestions?.map((sug, idx) => (
-                          <div key={idx} className="p-2.5 bg-[#FBF9F4] border border-[#ECE8E0] rounded-xl flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full bg-[#8C9B73]" />
-                            <p className="text-[10px] text-[#5A634D] leading-tight font-medium">{sug}</p>
+                    <div className="space-y-6">
+                      <div className="flex flex-col md:flex-row gap-6">
+                        {/* Indicador y Perfil */}
+                        <div className="flex-1 space-y-4">
+                          <div className="flex items-start gap-4">
+                            <div className="shrink-0 flex flex-col items-center">
+                              <div className="w-12 h-12 rounded-full border-4 border-[#8C9B73]/20 flex items-center justify-center relative">
+                                <span className="text-sm font-bold text-[#2F3E46]">{api.profile?.lastMentalHealthScore}</span>
+                                <svg className="absolute inset-0 w-full h-full -rotate-90">
+                                  <circle
+                                    cx="24" cy="24" r="20" fill="transparent" stroke="#8C9B73" strokeWidth="4"
+                                    strokeDasharray={`${(api.profile?.lastMentalHealthScore || 0) * 12.56} 125.6`}
+                                    className="transition-all duration-1000"
+                                  />
+                                </svg>
+                              </div>
+                              <span className="text-[8px] font-bold text-[#A3A19E] uppercase mt-1">Score</span>
+                            </div>
+                            <div className="space-y-1.5 flex-1">
+                              <p className="text-xs font-bold text-[#2F3E46]">Perfil de Tribu AI:</p>
+                              <p className="text-[11px] text-[#7A7875] leading-relaxed italic border-l-2 border-[#8C9B73]/30 pl-3">
+                                "{api.profile?.mentalHealthProfile}"
+                              </p>
+                            </div>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Mini Gráfico de Tendencia */}
+                        {api.profile?.mentalHealthHistory && api.profile.mentalHealthHistory.length > 1 && (
+                          <div className="w-full md:w-48 p-4 bg-[#FBF9F4] rounded-3xl border border-[#ECE8E0] space-y-2">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <TrendingUp size={12} className="text-[#8C9B73]" />
+                              <span className="text-[9px] font-bold text-[#A3A19E] uppercase tracking-wider">Tendencia</span>
+                            </div>
+                            <div className="h-16 flex items-end justify-between gap-1 px-1">
+                              {api.profile.mentalHealthHistory.slice(-7).map((h, i) => (
+                                <div
+                                  key={i}
+                                  className="w-full bg-[#8C9B73]/40 rounded-t-sm relative group"
+                                  style={{ height: `${h.score * 10}%` }}
+                                >
+                                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-[#2F3E46] text-white text-[8px] py-0.5 px-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                    {h.score}/10
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                            <p className="text-[8px] text-[#A3A19E] text-center">Últimas evaluaciones</p>
+                          </div>
+                        )}
                       </div>
-                    </div>
+
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <p className="text-[10px] font-bold text-[#A3A19E] uppercase tracking-widest flex items-center gap-1.5">
+                            <CheckCircle2 size={12} className="text-[#8C9B73]" />
+                            Sugerencias de la IA para hoy
+                          </p>
+                          <button
+                            onClick={() => {
+                              const message = `Hola 🌸, Tribu AI analizó mi estado hoy y me sugirió esto para que me ayudes:\n\n${api.profile?.mentalHealthSuggestions?.map(s => `• ${s}`).join('\n')}\n\nGracias por estar conmigo ❤️`;
+                              window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
+                            }}
+                            className="text-[9px] font-bold text-[#5A634D] bg-white border border-[#ECE8E0] px-2.5 py-1.5 rounded-full flex items-center gap-1.5 hover:bg-[#F4F1ED] transition-all shadow-sm cursor-pointer"
+                          >
+                            <Share2 size={10} />
+                            Compartir con mi Apoyo
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          {api.profile?.mentalHealthSuggestions?.map((sug, idx) => (
+                            <div key={idx} className="p-3 bg-[#FBF9F4] border border-[#ECE8E0] rounded-2xl flex items-center gap-2.5 group hover:border-[#8C9B73]/30 transition-colors">
+                              <div className="w-2 h-2 rounded-full bg-[#8C9B73] shrink-0 group-hover:scale-125 transition-transform" />
+                              <p className="text-[10px] text-[#5A634D] leading-tight font-medium">{sug}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
 
                     {(api.profile?.lastMentalHealthScore || 0) > 7 && (
                       <div className="p-3 rounded-2xl bg-rose-50 border border-rose-100 flex items-center gap-3">

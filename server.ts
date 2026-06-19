@@ -195,6 +195,14 @@ app.post("/api/mental-health/analyze", async (req, res) => {
       mentalHealthSuggestions: suggestions
     });
 
+    // Add to history
+    if (!updatedProfile.mentalHealthHistory) updatedProfile.mentalHealthHistory = [];
+    updatedProfile.mentalHealthHistory.push({
+      date: new Date().toISOString().split('T')[0],
+      score: score
+    });
+    dbInstance.save();
+
     res.json({ success: true, profile: updatedProfile });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -282,6 +290,14 @@ app.post("/api/mental-health/analyze", async (req, res) => {
       mentalHealthProfile: profileSummary,
       mentalHealthSuggestions: suggestions
     });
+
+    // Add to history
+    if (!updatedProfile.mentalHealthHistory) updatedProfile.mentalHealthHistory = [];
+    updatedProfile.mentalHealthHistory.push({
+      date: new Date().toISOString().split('T')[0],
+      score: score
+    });
+    dbInstance.save();
 
     res.json({ success: true, profile: updatedProfile });
   } catch (err: any) {
