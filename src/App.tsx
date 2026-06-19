@@ -51,6 +51,23 @@ export default function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  useEffect(() => {
+    // Initialize Google Sign-In for native platform
+    const initGoogle = async () => {
+      if (Capacitor.isNativePlatform()) {
+        try {
+          await GoogleSignIn.initialize({
+            clientId: '285411670721-h00bcmo1u4lr74ef64ttordrvbu5oane.apps.googleusercontent.com',
+          });
+          console.log("Google Sign-In initialized for APK");
+        } catch (e) {
+          console.error("Initialization error", e);
+        }
+      }
+    };
+    initGoogle();
+  }, []);
+
   const [activeNav, setActiveNav] = useState("dashboard");
   const [showCrisisAlert, setShowCrisisAlert] = useState(false);
   const [showPaymentSuccess, setShowPaymentSuccess] = useState(false);

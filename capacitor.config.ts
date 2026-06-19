@@ -10,8 +10,8 @@ const config: CapacitorConfig = {
   },
   plugins: {
     GoogleSignIn: {
-      clientId: '285411670721-hjuem1ghq6i4ppbl07ikbvi81iri3kba.apps.googleusercontent.com',
-      serverClientId: '285411670721-hjuem1ghq6i4ppbl07ikbvi81iri3kba.apps.googleusercontent.com',
+      clientId: '285411670721-h00bcmo1u4lr74ef64ttordrvbu5oane.apps.googleusercontent.com',
+      serverClientId: '285411670721-h00bcmo1u4lr74ef64ttordrvbu5oane.apps.googleusercontent.com',
     },
   },
 };
