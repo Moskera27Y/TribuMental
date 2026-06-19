@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Mail, Lock } from 'lucide-react';
 import { useTribuApi } from '../hooks/useTribuApi.tsx';
+import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
+import { Capacitor } from '@capacitor/core';
 
 export default function LoginPage() {
   const api = useTribuApi();
@@ -28,7 +30,32 @@ export default function LoginPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
-    console.log("Iniciando flujo de Google...");
+
+    if (Capacitor.isNativePlatform()) {
+      console.log("Iniciando Google Login nativo en APK...");
+      try {
+        const result = await GoogleSignIn.signIn();
+        console.log("Resultado Google Nativo:", result);
+
+        if (result.authentication && result.email) {
+          const googleName = (result.givenName || "") + " " + (result.familyName || "");
+          // Usamos api.login para asegurar que si no existe, se cree (o se recupere)
+          await api.login(googleName.trim() || "Usuario Google", result.email);
+          await api.refreshSession();
+          navigate('/dashboard');
+        } else {
+          throw new Error("No se obtuvo información del usuario");
+        }
+      } catch (err: any) {
+        console.error("Error Google Nativo:", err);
+        setError("Error al conectar con Google nativo.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    console.log("Iniciando flujo de Google web/simulador...");
     try {
       const data = await api.getGoogleAuthUrl();
       const authUrl = data.url;

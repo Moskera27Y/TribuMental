@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Mail, Lock, User } from 'lucide-react';
 import { useTribuApi } from '../hooks/useTribuApi.tsx';
+import { GoogleSignIn } from '@capawesome/capacitor-google-sign-in';
+import { Capacitor } from '@capacitor/core';
 
 export default function RegisterPage() {
   const api = useTribuApi();
@@ -29,13 +31,35 @@ export default function RegisterPage() {
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
-    console.log("Iniciando flujo de Google...");
+
+    if (Capacitor.isNativePlatform()) {
+      console.log("Iniciando Google Login nativo en APK...");
+      try {
+        const result = await GoogleSignIn.signIn();
+        console.log("Resultado Google Nativo:", result);
+
+        if (result.authentication && result.email) {
+          const googleName = (result.givenName || "") + " " + (result.familyName || "");
+          await api.login(googleName.trim() || "Usuario Google", result.email);
+          await api.refreshSession();
+          navigate('/onboarding');
+        } else {
+          throw new Error("No se obtuvo información del usuario");
+        }
+      } catch (err: any) {
+        console.error("Error Google Nativo:", err);
+        setError("Error al conectar con Google nativo.");
+      } finally {
+        setLoading(false);
+      }
+      return;
+    }
+
+    console.log("Iniciando flujo de Google web/simulador...");
     try {
-      // Obtenemos la URL de autenticación desde el backend (puede ser real o simulada)
       const data = await api.getGoogleAuthUrl();
       const authUrl = data.url;
 
-      // Abrimos una ventana emergente para el login
       const width = 500;
       const height = 600;
       const left = window.screenX + (window.outerWidth - width) / 2;
@@ -47,11 +71,9 @@ export default function RegisterPage() {
         `width=${width},height=${height},left=${left},top=${top}`
       );
 
-      // Escuchamos el mensaje de éxito que envía el backend al terminar
       const messageListener = async (event: MessageEvent) => {
         if (event.data.type === 'OAUTH_AUTH_SUCCESS') {
           window.removeEventListener('message', messageListener);
-          console.log("Login con Google exitoso, refrescando sesión...");
           await api.refreshSession();
           navigate('/onboarding');
         }
@@ -59,7 +81,6 @@ export default function RegisterPage() {
 
       window.addEventListener('message', messageListener);
 
-      // Verificamos periódicamente si la ventana se cerró sin éxito
       const checkPopup = setInterval(() => {
         if (!popup || popup.closed) {
           clearInterval(checkPopup);
@@ -68,7 +89,6 @@ export default function RegisterPage() {
       }, 1000);
 
     } catch (err: any) {
-      console.error("Error en Google Login:", err);
       setError(err.message || 'Error al conectar con Google');
       setLoading(false);
     }
